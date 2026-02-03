@@ -23,10 +23,6 @@ jest.mock('../../context/search', () => ({
     useSearch: jest.fn(() => [{ keyword: '' }, jest.fn()]) // Mock useSearch hook to return null state and a mock function
   }));  
 
-jest.mock('../../hooks/useCategory', () => ({
-    __esModule: true,
-    default: jest.fn(() => []) // Mock useCategory hook to return an empty array
-  }));
 
   Object.defineProperty(window, 'localStorage', {
     value: {
@@ -48,6 +44,9 @@ window.matchMedia = window.matchMedia || function() {
 describe('Login Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        axios.get.mockResolvedValue({
+            data: { category: [] }
+        });
     });
 
     it('renders login form', () => {
