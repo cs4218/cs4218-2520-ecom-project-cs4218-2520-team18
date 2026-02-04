@@ -1,7 +1,6 @@
 import { registerController } from "./authController";
 import userModel from "../models/userModel";
 import { hashPassword } from "./../helpers/authHelper.js";
-import { describe, it } from "node:test";
 
 //REGISTER CONTROLLER
 jest.mock("../models/userModel.js");
@@ -18,8 +17,8 @@ describe("registerController", () => {
         email: "test@example.com",
         password: "password123",
         phone: "1234567890",
-        address: "123 Test St",
         dob: "2000-01-01",
+        address: "123 Test St",
         answer: "testanswer",
       },
     };
@@ -37,7 +36,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ error: "Name is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Name is Required" });
   });
 
   it("should return error if email is missing", async () => {
@@ -45,7 +45,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "Email is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Email is Required" });
   });
 
   it("should return error if password is missing", async () => {
@@ -53,7 +54,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "Password is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Password is Required" });
   });
 
   it("should return error if phone is missing", async () => {
@@ -61,7 +63,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "Phone no is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Phone no is Required" });
   });
 
   it("should return error if address is missing", async () => {
@@ -69,7 +72,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "Address is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Address is Required" });
   });
 
   it("should return error if DOB is missing", async () => {
@@ -77,7 +81,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "DOB is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "DOB is Required" });
   });
 
   it("should return error if answer is missing", async () => {
@@ -85,7 +90,8 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith({ message: "Answer is Required" });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Answer is Required" });
   });
 
   // Logic tests
@@ -94,10 +100,12 @@ describe("registerController", () => {
 
     await registerController(req, res);
 
+    expect(res.status).toHaveBeenCalledWith(200);
     expect(res.send).toHaveBeenCalledWith({
       success: false,
       message: "Already registered, please login",
     });
+
   });
 
   it("should register user successfully", async () => {
@@ -174,7 +182,7 @@ describe("registerController", () => {
   });
 
   // Edge cases
-  describe("Name validation edge cases", async () => {
+  describe("Name validation edge cases", () => {
     const invalidNames = [" "];
 
     test.each(invalidNames)(
@@ -188,7 +196,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("Email validation edge cases", async () => {
+  describe("Email validation edge cases", () => {
     const invalidEmails = [
       " ",
       "plainaddress",
@@ -218,7 +226,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("Password validation edge cases", async () => {
+  describe("Password validation edge cases", () => {
     const invalidPasswords = [" "];
 
     test.each(invalidPasswords)(
@@ -228,7 +236,9 @@ describe("registerController", () => {
 
         await registerController(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
+          success: false,
           message: "Password is Required",
         });
         expect(userModel).not.toHaveBeenCalled();
@@ -236,7 +246,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("should accept valid phone numbers", async () => {
+  describe("should accept valid phone numbers", () => {
     const validPhones = ["1234567890", "+11234567890"];
 
     test.each(validPhones)(
@@ -255,7 +265,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("Phone number validation edge cases", async () => {
+  describe("Phone number validation edge cases", () => {
     const invalidPhones = [
       " ",
       "12345",
@@ -276,7 +286,9 @@ describe("registerController", () => {
 
         await registerController(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
+          success: false,
           message: "Invalid Phone Number",
         });
         expect(userModel).not.toHaveBeenCalled();
@@ -284,7 +296,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("Address validation edge cases", async () => {
+  describe("Address validation edge cases", () => {
     const invalidAddresses = [" "];
 
     test.each(invalidAddresses)(
@@ -294,7 +306,9 @@ describe("registerController", () => {
 
         await registerController(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
+          success: false,
           message: "Address is Required",
         });
         expect(userModel).not.toHaveBeenCalled();
@@ -302,7 +316,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("DOB validation edge cases", async () => {
+  describe("DOB validation edge cases", () => {
     const invalidDOBs = [" ", "invalid-date"];
 
     test.each(invalidDOBs)(
@@ -311,7 +325,9 @@ describe("registerController", () => {
         req.body.dob = dob;
         await registerController(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
+          success: false,
           message: "Invalid DOB",
         });
         expect(userModel).not.toHaveBeenCalled();
@@ -327,13 +343,14 @@ describe("registerController", () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith({
+        success: false,
         message: "DOB cannot be in the future",
       });
       expect(userModel).not.toHaveBeenCalled();
     });
   });
 
-  describe("Answer validation edge cases", async () => {
+  describe("Answer validation edge cases", () => {
     const invalidAnswers = [" "];
 
     test.each(invalidAnswers)(
@@ -342,7 +359,9 @@ describe("registerController", () => {
         req.body.answer = answer;
         await registerController(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
+          success: false,
           message: "Answer is Required",
         });
         expect(userModel).not.toHaveBeenCalled();
@@ -350,7 +369,7 @@ describe("registerController", () => {
     );
   });
 
-  describe("Whitespace handling in inputs", async () => {
+  describe("Whitespace handling in inputs", () => {
     it("should trim whitespace from name", async () => {
       req.body.name = "   Test User   ";
 
