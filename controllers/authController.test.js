@@ -567,8 +567,8 @@ describe("loginController", () => {
 
       expect(userModel.findOne).toHaveBeenCalledWith({ email: req.body.email });
       expect(comparePassword).toHaveBeenCalledWith(req.body.password, mockUser.password);
-      expect(generateToken).toHaveBeenCalledWith(
-        { id: mockUser._id },
+      expect(JWT.sign).toHaveBeenCalledWith(
+        { _id: mockUser._id },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -576,7 +576,7 @@ describe("loginController", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
-          message: "Login Successfully",
+          message: "Login Successful",
           token: "testtoken",
           user: {
             _id: "testuserid",
@@ -775,7 +775,7 @@ describe("loginController", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
-          message: "Login Successfully",
+          message: "Login Successful",
         }),
       );
     });
@@ -804,7 +804,7 @@ describe("loginController", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
-          message: "Login Successfully",
+          message: "Login Successful",
         }),
       );
     });
@@ -832,7 +832,7 @@ describe("loginController", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
-          message: "Login Successfully",
+          message: "Login Successful",
         }),
       );
     });
@@ -924,6 +924,7 @@ describe("loginController", () => {
         expect.objectContaining({
           success: false,
           message: "Error in Login",
+          error: dbError,
         }),
       );
     });
