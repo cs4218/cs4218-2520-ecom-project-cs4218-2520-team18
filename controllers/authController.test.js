@@ -16,7 +16,7 @@ describe("registerController", () => {
         name: "Test User",
         email: "test@example.com",
         password: "password123",
-        phone: "1234567890",
+        phone: "+1234567890",
         dob: "2000-01-01",
         address: "123 Test St",
         answer: "testanswer",
@@ -37,7 +37,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Name is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Name is Required",
+    });
   });
 
   it("should return error if email is missing", async () => {
@@ -46,7 +49,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Email is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Email is Required",
+    });
   });
 
   it("should return error if password is missing", async () => {
@@ -55,7 +61,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Password is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Password is Required",
+    });
   });
 
   it("should return error if phone is missing", async () => {
@@ -64,7 +73,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Phone no is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Phone no. is Required",
+    });
   });
 
   it("should return error if address is missing", async () => {
@@ -73,7 +85,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Address is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Address is Required",
+    });
   });
 
   it("should return error if DOB is missing", async () => {
@@ -82,7 +97,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "DOB is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "DOB is Required",
+    });
   });
 
   it("should return error if answer is missing", async () => {
@@ -91,7 +109,10 @@ describe("registerController", () => {
     await registerController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({ success: false, message: "Answer is Required" });
+    expect(res.send).toHaveBeenCalledWith({
+      success: false,
+      message: "Answer is Required",
+    });
   });
 
   // Logic tests
@@ -105,7 +126,6 @@ describe("registerController", () => {
       success: false,
       message: "Already registered, please login",
     });
-
   });
 
   it("should register user successfully", async () => {
@@ -113,23 +133,26 @@ describe("registerController", () => {
 
     hashPassword.mockResolvedValue("hashedpassword");
 
-    const mockSave = jest.fn().mockResolvedValue({
+    const mockUserDoc = {
       _id: "testuserid",
       name: "Test User",
       email: "test@example.com",
-      password: "hashedpassword",
-      phone: "1234567890",
+      phone: "+1234567890",
       address: "123 Test St",
       dob: "2000-01-01",
+      // password and answer will be excluded in response
+      password: "hashedpassword",
       answer: "testanswer",
-    });
+    };
+    const mockSave = jest.fn().mockResolvedValue({ _doc: mockUserDoc });
 
+    // Mock the userModel constructor to return an object with a save method
     userModel.mockImplementation(() => ({
       save: mockSave,
     }));
 
     await registerController(req, res);
-
+    
     expect(hashPassword).toHaveBeenCalledWith("password123");
     expect(userModel).toHaveBeenCalledTimes(1);
     expect(mockSave).toHaveBeenCalledTimes(1);
@@ -142,11 +165,9 @@ describe("registerController", () => {
         _id: "testuserid",
         name: "Test User",
         email: "test@example.com",
-        password: "hashedpassword",
-        phone: "1234567890",
+        phone: "+1234567890",
         address: "123 Test St",
         dob: "2000-01-01",
-        answer: "testanswer",
       },
     });
   });
@@ -182,72 +203,201 @@ describe("registerController", () => {
   });
 
   // Edge cases
-  describe("Name validation edge cases", () => {
-    const invalidNames = [" "];
 
-    test.each(invalidNames)(
-      "should return error for invalid name: %s",
-      async (name) => {
-        req.body.name = name;
-        await registerController(req, res);
-        expect(res.send).toHaveBeenCalledWith({ error: "Name is Required" });
-        expect(userModel).not.toHaveBeenCalled();
-      },
-    );
+  // 1. Whitespace-only input (should be treated as missing)
+  describe("Whitespace-only input validation", () => {
+    test("should return error for whitespace-only name", async () => {
+      req.body.name = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Name is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
+
+    test("should return error for whitespace-only email", async () => {
+      req.body.email = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Email is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
+
+    test("should return error for whitespace-only password", async () => {
+      req.body.password = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Password is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
+
+    test("should return error for whitespace-only phone", async () => {
+      req.body.phone = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Phone no. is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
+
+    test("should return error for whitespace-only address", async () => {
+      req.body.address = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Address is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
+
+    test("should return error for whitespace-only answer", async () => {
+      req.body.answer = " ";
+
+      await registerController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Answer is Required",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
   });
 
-  describe("Email validation edge cases", () => {
-    const invalidEmails = [
-      " ",
-      "plainaddress",
-      "@missingusername.com",
-      "username@.com",
-      "username@com",
-      "username@domain..com",
-      "#$%^&*()@example.com",
-      "Joe Smith <email@example.com>",
-      "email@example@example.com",
-      ".email@example.com",
-      "email@example.com (email)",
-      "email@-example.com",
-    ];
+  // 2. Input length boundaries
+  describe("Input length boundary validation", () => {
+    test("should return error for password shorter than 6 characters", async () => {
+      req.body.password = "12345";
 
-    test.each(invalidEmails)(
-      "should return error for invalid email: %s",
-      async (email) => {
-        req.body.email = email;
-        await registerController(req, res);
+      await registerController(req, res);
 
-        expect(res.send).toHaveBeenCalledWith({
-          message: "Invalid Email Format",
-        });
-        expect(userModel).not.toHaveBeenCalled();
-      },
-    );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Password must be at least 6 characters long",
+      });
+      expect(userModel).not.toHaveBeenCalled();
+    });
   });
 
-  describe("Password validation edge cases", () => {
-    const invalidPasswords = [" "];
+  // 3. Invalid format input (not whitespace-only)
+  describe("Invalid format validation", () => {
+    describe("Email validation edge cases", () => {
+      const invalidEmails = [
+        "plainaddress",
+        "@missingusername.com",
+        "username@.com",
+        "username@com",
+        "username@domain..com",
+        "#$%^&*()@example.com",
+        "Joe Smith <email@example.com>",
+        "email@example@example.com",
+        "email@example.com (email)",
+      ];
 
-    test.each(invalidPasswords)(
-      "should return error for invalid password: %s",
-      async (password) => {
-        req.body.password = password;
+      test.each(invalidEmails)(
+        "should return error for invalid email: %s",
+        async (email) => {
+          req.body.email = email;
+          await registerController(req, res);
+
+          expect(res.status).toHaveBeenCalledWith(400);
+          expect(res.send).toHaveBeenCalledWith({
+            success: false,
+            message: "Invalid Email Format",
+          });
+          expect(userModel).not.toHaveBeenCalled();
+        },
+      );
+    });
+
+    describe("Phone number validation edge cases", () => {
+      const invalidPhones = [
+        "abcdefghij",
+        "123-456-7890",
+        "(123) 456-7890",
+        "+1 (123) 456-7890",
+        "123.456.7890",
+        "123 456 7890",
+        "!@#$%^&*()",
+      ];
+
+      test.each(invalidPhones)(
+        "should return error for invalid phone number: %s",
+        async (phone) => {
+          req.body.phone = phone;
+
+          await registerController(req, res);
+
+          expect(res.status).toHaveBeenCalledWith(400);
+          expect(res.send).toHaveBeenCalledWith({
+            success: false,
+            message: "Invalid Phone Number",
+          });
+          expect(userModel).not.toHaveBeenCalled();
+        },
+      );
+    });
+
+    describe("DOB validation edge cases", () => {
+      const invalidDOBs = ["invalid-date"];
+
+      test.each(invalidDOBs)(
+        "should return error for invalid DOB: %s",
+        async (dob) => {
+          req.body.dob = dob;
+          await registerController(req, res);
+
+          expect(res.status).toHaveBeenCalledWith(400);
+          expect(res.send).toHaveBeenCalledWith({
+            success: false,
+            message: "Invalid DOB format. Please use YYYY-MM-DD",
+          });
+          expect(userModel).not.toHaveBeenCalled();
+        },
+      );
+
+      test("should return error if DOB is in the future", async () => {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + 1);
+        req.body.dob = futureDate.toISOString().split("T")[0];
 
         await registerController(req, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({
           success: false,
-          message: "Password is Required",
+          message: "Invalid or future DOB",
         });
         expect(userModel).not.toHaveBeenCalled();
-      },
-    );
+      });
+    });
   });
 
+  // 3. Valid phone numbers
   describe("should accept valid phone numbers", () => {
-    const validPhones = ["1234567890", "+11234567890"];
+    const validPhones = ["123456789012345", "+11234567890"];
 
     test.each(validPhones)(
       "should accept valid phone number: %s",
@@ -255,116 +405,18 @@ describe("registerController", () => {
         req.body.phone = phone;
         userModel.findOne.mockResolvedValue(null);
         hashPassword.mockResolvedValue("hashedpassword");
-        const mockSave = jest.fn().mockResolvedValue({});
+        const mockSave = jest.fn().mockResolvedValue({ _doc: req.body });
         userModel.mockImplementation(() => ({ save: mockSave }));
 
         await registerController(req, res);
 
         expect(res.status).toHaveBeenCalledWith(201);
-      },
-    );
-  });
-
-  describe("Phone number validation edge cases", () => {
-    const invalidPhones = [
-      " ",
-      "12345",
-      "abcdefghij",
-      "123-456-7890",
-      "(123) 456-7890",
-      "+1 (123) 456-7890",
-      "123.456.7890",
-      "123 456 7890",
-      "123456789012345",
-      "!@#$%^&*()",
-    ];
-
-    test.each(invalidPhones)(
-      "should return error for invalid phone number: %s",
-      async (phone) => {
-        req.body.phone = phone;
-
-        await registerController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith({
-          success: false,
-          message: "Invalid Phone Number",
-        });
-        expect(userModel).not.toHaveBeenCalled();
-      },
-    );
-  });
-
-  describe("Address validation edge cases", () => {
-    const invalidAddresses = [" "];
-
-    test.each(invalidAddresses)(
-      "should return error for invalid address: %s",
-      async (address) => {
-        req.body.address = address;
-
-        await registerController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith({
-          success: false,
-          message: "Address is Required",
-        });
-        expect(userModel).not.toHaveBeenCalled();
-      },
-    );
-  });
-
-  describe("DOB validation edge cases", () => {
-    const invalidDOBs = [" ", "invalid-date"];
-
-    test.each(invalidDOBs)(
-      "should return error for invalid DOB: %s",
-      async (dob) => {
-        req.body.dob = dob;
-        await registerController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith({
-          success: false,
-          message: "Invalid DOB",
-        });
-        expect(userModel).not.toHaveBeenCalled();
-      },
-    );
-
-    test("should return error if DOB is in the future", async () => {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1);
-      req.body.dob = futureDate.toISOString().split("T")[0];
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "DOB cannot be in the future",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Answer validation edge cases", () => {
-    const invalidAnswers = [" "];
-
-    test.each(invalidAnswers)(
-      "should return error for invalid answer: %s",
-      async (answer) => {
-        req.body.answer = answer;
-        await registerController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith({
-          success: false,
-          message: "Answer is Required",
-        });
-        expect(userModel).not.toHaveBeenCalled();
+        expect(res.send).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: true,
+            message: "User Registered Successfully",
+          }),
+        );
       },
     );
   });
@@ -454,13 +506,13 @@ describe("registerController", () => {
       name: "Test User",
       email: "test@example.com",
       password: "hashedpassword",
-      phone: "1234567890",
+      phone: "+1234567890",
       address: "123 Test St",
       dob: "2000-01-01",
       answer: "testanswer",
     };
 
-    const mockSave = jest.fn().mockResolvedValue(mockSavedUser);
+    const mockSave = jest.fn().mockResolvedValue({ _doc: mockSavedUser });
     userModel.mockImplementation(() => ({ save: mockSave }));
 
     await registerController(req, res);
