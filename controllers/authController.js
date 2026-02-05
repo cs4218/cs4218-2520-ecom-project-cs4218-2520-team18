@@ -6,33 +6,80 @@ import JWT from "jsonwebtoken";
 
 export const registerController = async (req, res) => {
   try {
-    const { name, email, password, phone, address, answer } = req.body;
+    let { name, email, password, phone, address, dob, answer } = req.body;
+
+    // trim inputs
+    name = name?.trim();
+    email = email?.trim();
+    password = password?.trim();
+    phone = phone?.trim();
+    address = address?.trim();
+    dob = dob?.trim();
+    answer = answer?.trim();
+
     //validations
     if (!name) {
-      return res.send({ error: "Name is Required" });
+      return res.status(400).send({ success: false, message: "Name is Required" });
     }
     if (!email) {
-      return res.send({ message: "Email is Required" });
+      return res.status(400).send({ success: false, message: "Email is Required" });
     }
     if (!password) {
-      return res.send({ message: "Password is Required" });
+      return res.status(400).send({ success: false, message: "Password is Required" });
     }
     if (!phone) {
-      return res.send({ message: "Phone no is Required" });
+      return res.status(400).send({ success: false, message: "Phone no. is Required" });
     }
     if (!address) {
-      return res.send({ message: "Address is Required" });
+      return res.status(400).send({ success: false, message: "Address is Required" });
+    }
+    if (!dob) {
+      return res.status(400).send({ success: false, message: "DOB is Required" });
     }
     if (!answer) {
-      return res.send({ message: "Answer is Required" });
+      return res.status(400).send({ success: false, message: "Answer is Required" });
     }
+
+    // Email format validation
+    // RFC 5322 Official Standard Email Regex
+    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
+    if (!emailRegex.test(email)) {
+      return res.status(400).send({ success: false, message: "Invalid Email Format" });
+    }
+
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).send({ success: false, message: "Invalid Phone Number" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).send({
+        success: false,
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    // DOB format validation (YYYY-MM-DD)
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(dob)) {
+      return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
+    }
+    // Check if DOB is a valid date and not in the future
+    const dobDate = new Date(dob);
+    const now = new Date();
+    if (isNaN(dobDate.getTime()) || dobDate > now) {
+      return res.status(400).send({ success: false, message: "Invalid or future DOB" });
+    }
+
+
+
     //check user
     const exisitingUser = await userModel.findOne({ email });
     //exisiting user
     if (exisitingUser) {
       return res.status(200).send({
         success: false,
-        message: "Already Register please login",
+        message: "Already registered, please login",
       });
     }
     //register user
@@ -47,16 +94,18 @@ export const registerController = async (req, res) => {
       answer,
     }).save();
 
+    // Exclude password and answer from the response
+    const { password: pwd, answer: ans, ...userWithoutSensitive } = user._doc;
     res.status(201).send({
       success: true,
-      message: "User Register Successfully",
-      user,
+      message: "User Registered Successfully",
+      user: userWithoutSensitive,
     });
   } catch (error) {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: "Errro in Registeration",
+      message: "Error in Registration",
       error,
     });
   }
