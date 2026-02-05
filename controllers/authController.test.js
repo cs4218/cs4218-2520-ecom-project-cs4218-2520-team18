@@ -3,7 +3,6 @@ import userModel from "../models/userModel";
 import { loginController } from "./authController";
 import JWT from "jsonwebtoken";
 import { hashPassword, comparePassword } from "./../helpers/authHelper.js";
-import { describe, it } from "node:test";
 
 //REGISTER CONTROLLER
 jest.mock("../models/userModel.js");
