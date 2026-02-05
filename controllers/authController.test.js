@@ -17,7 +17,7 @@ describe("registerController", () => {
         email: "test@example.com",
         password: "password123",
         phone: "+1234567890",
-        dob: "2000-01-01",
+        DOB: "2000-01-01",
         address: "123 Test St",
         answer: "testanswer",
       },
@@ -92,7 +92,7 @@ describe("registerController", () => {
   });
 
   it("should return error if DOB is missing", async () => {
-    req.body.dob = "";
+    req.body.DOB = "";
 
     await registerController(req, res);
 
@@ -139,7 +139,7 @@ describe("registerController", () => {
       email: "test@example.com",
       phone: "+1234567890",
       address: "123 Test St",
-      dob: "2000-01-01",
+      DOB: "2000-01-01",
       // password and answer will be excluded in response
       password: "hashedpassword",
       answer: "testanswer",
@@ -167,7 +167,7 @@ describe("registerController", () => {
         email: "test@example.com",
         phone: "+1234567890",
         address: "123 Test St",
-        dob: "2000-01-01",
+        DOB: "2000-01-01",
       },
     });
   });
@@ -365,8 +365,8 @@ describe("registerController", () => {
 
       test.each(invalidDOBs)(
         "should return error for invalid DOB: %s",
-        async (dob) => {
-          req.body.dob = dob;
+        async (DOB) => {
+          req.body.DOB = DOB;
           await registerController(req, res);
 
           expect(res.status).toHaveBeenCalledWith(400);
@@ -381,7 +381,7 @@ describe("registerController", () => {
       test("should return error if DOB is in the future", async () => {
         const futureDate = new Date();
         futureDate.setDate(futureDate.getDate() + 1);
-        req.body.dob = futureDate.toISOString().split("T")[0];
+        req.body.DOB = futureDate.toISOString().split("T")[0];
 
         await registerController(req, res);
 
@@ -508,7 +508,7 @@ describe("registerController", () => {
       password: "hashedpassword",
       phone: "+1234567890",
       address: "123 Test St",
-      dob: "2000-01-01",
+      DOB: "2000-01-01",
       answer: "testanswer",
     };
 

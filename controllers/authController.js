@@ -6,7 +6,7 @@ import JWT from "jsonwebtoken";
 
 export const registerController = async (req, res) => {
   try {
-    let { name, email, password, phone, address, dob, answer } = req.body;
+    let { name, email, password, phone, address, DOB, answer } = req.body;
 
     // trim inputs
     name = name?.trim();
@@ -14,7 +14,7 @@ export const registerController = async (req, res) => {
     password = password?.trim();
     phone = phone?.trim();
     address = address?.trim();
-    dob = dob?.trim();
+    DOB = DOB?.trim();
     answer = answer?.trim();
 
     //validations
@@ -33,7 +33,7 @@ export const registerController = async (req, res) => {
     if (!address) {
       return res.status(400).send({ success: false, message: "Address is Required" });
     }
-    if (!dob) {
+    if (!DOB) {
       return res.status(400).send({ success: false, message: "DOB is Required" });
     }
     if (!answer) {
@@ -61,11 +61,11 @@ export const registerController = async (req, res) => {
 
     // DOB format validation (YYYY-MM-DD)
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(dob)) {
+    if (!dobRegex.test(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
     }
     // Check if DOB is a valid date and not in the future
-    const dobDate = new Date(dob);
+    const dobDate = new Date(DOB);
     const now = new Date();
     if (isNaN(dobDate.getTime()) || dobDate > now) {
       return res.status(400).send({ success: false, message: "Invalid or future DOB" });
@@ -91,6 +91,7 @@ export const registerController = async (req, res) => {
       phone,
       address,
       password: hashedPassword,
+      DOB,
       answer,
     }).save();
 
