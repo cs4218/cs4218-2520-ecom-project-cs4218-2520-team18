@@ -1,4 +1,4 @@
-import { registerController, loginController, forgotPasswordController } from "./authController";
+import { registerController, loginController, forgotPasswordController, testController } from "./authController";
 import userModel from "../models/userModel";
 import JWT from "jsonwebtoken";
 import { hashPassword, comparePassword } from "./../helpers/authHelper.js";
@@ -1687,3 +1687,38 @@ describe('forgotPasswordController', () => {
     });
   });
 });
+
+describe('testController', () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = {};
+    res = {
+      send: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+    jest.clearAllMocks();
+  });
+
+  it('should return "Protected Routes" message', () => {
+    testController(req, res);
+
+    expect(res.send).toHaveBeenCalledWith("Protected Route accessed successfully");
+  });
+
+  it('should handle errors gracefully', () => {
+    const error = new Error('Unexpected error');
+    res.send.mockImplementationOnce(() => {
+      throw error;
+    });
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+    testController(req, res);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(res.send).toHaveBeenCalledWith({ error });
+
+    consoleErrorSpy.mockRestore();
+  });
+})
