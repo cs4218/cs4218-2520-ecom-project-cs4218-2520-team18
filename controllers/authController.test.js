@@ -1703,7 +1703,10 @@ describe('testController', () => {
   it('should return "Protected Routes" message', () => {
     testController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith("Protected Route accessed successfully");
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      message: "Protected route accessed successfully",
+    }));
   });
 
   it('should handle errors gracefully', () => {
@@ -1717,7 +1720,13 @@ describe('testController', () => {
     testController(req, res);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(error);
-    expect(res.send).toHaveBeenCalledWith({ error });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: "Error in Test",
+      })
+    );
 
     consoleErrorSpy.mockRestore();
   });
