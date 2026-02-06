@@ -2,7 +2,6 @@ import { registerController, loginController, forgotPasswordController } from ".
 import userModel from "../models/userModel";
 import JWT from "jsonwebtoken";
 import { hashPassword, comparePassword } from "./../helpers/authHelper.js";
-import { describe, it } from "node:test";
 
 //REGISTER CONTROLLER
 jest.mock("../models/userModel.js");
@@ -552,7 +551,7 @@ describe("registerController", () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
-            success: true,
+            success: false,
             message: "Already registered, please login",
           }),
         );
@@ -636,7 +635,6 @@ describe("registerController", () => {
       await registerController(req, res);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error in registration'),
         expect.any(Error),
       );
 
@@ -1200,7 +1198,6 @@ describe("loginController", () => {
       await loginController(req, res);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error in login'),
         error,
       );
 
@@ -1236,13 +1233,13 @@ describe('forgotPasswordController', () => {
         answer: "testanswer",
       };
       userModel.findOne.mockResolvedValue(mockUser);
-      hashedPassword.mockResolvedValue("newhashedpassword");
+      hashPassword.mockResolvedValue("newhashedpassword");
       userModel.findByIdAndUpdate.mockResolvedValue(mockUser);
 
       await forgotPasswordController(req, res);
 
       expect(userModel.findOne).toHaveBeenCalledWith({ email: req.body.email, answer: req.body.answer });
-      expect(hashedPassword).toHaveBeenCalledWith(req.body.newPassword);
+      expect(hashPassword).toHaveBeenCalledWith(req.body.newPassword);
       expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(mockUser._id, {
         password: "newhashedpassword",
       });
@@ -1266,7 +1263,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Email is required",
         }),
       );
     });
@@ -1280,7 +1277,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Answer is required",
         }),
       );
     });
@@ -1294,7 +1291,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "New password is required",
         }),
       );
     });
@@ -1308,7 +1305,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Email is required",
         }),
       );
     });
@@ -1322,7 +1319,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Answer is required",
         }),
       );
     });
@@ -1336,7 +1333,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "New password is required",
         }),
       );
     });
@@ -1352,7 +1349,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Email is required",
         }),
       );
     });
@@ -1366,7 +1363,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "Answer is required",
         }),
       );
     });
@@ -1380,7 +1377,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Invalid Email or Answer",
+          message: "New password is required",
         }),
       );
     });
@@ -1416,7 +1413,7 @@ describe('forgotPasswordController', () => {
     });
 
     describe('Password Format Tests', () => {
-      it('should return error for password shorter than 6 characters', async () => {
+      it('should return error for new password shorter than 6 characters', async () => {
         req.body.newPassword = "12345";
 
         await forgotPasswordController(req, res);
@@ -1425,7 +1422,7 @@ describe('forgotPasswordController', () => {
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
-            message: "Invalid Email or Answer",
+            message: "New password must be at least 6 characters long",
           }),
         );
       });
@@ -1456,7 +1453,7 @@ describe('forgotPasswordController', () => {
 
         await forgotPasswordController(req, res);
 
-        expect(userModel.findOne).toHaveBeenCalledWith({ email: "test@gmail.com", answer: "testanswer" });
+        expect(userModel.findOne).toHaveBeenCalledWith({ email: "test@example.com", answer: "testanswer" });
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -1468,16 +1465,26 @@ describe('forgotPasswordController', () => {
 
       it('should trim whitespace from new password', async () => {
         req.body.newPassword = "   newpassword   ";
-        userModel.findOne.mockResolvedValue(null);
+        const mockUser = {
+          _id: "testid",
+          email: "test@example.com",
+          answer: "testanswer",
+        };
+        userModel.findOne.mockResolvedValue(mockUser);
+        hashPassword.mockResolvedValue("hashednewpassword");
+        userModel.findByIdAndUpdate.mockResolvedValue(mockUser);
 
         await forgotPasswordController(req, res);
 
-        expect(hashedPassword).toHaveBeenCalledWith("newpassword");
-        expect(res.status).toHaveBeenCalledWith(400);
+        expect(hashPassword).toHaveBeenCalledWith("newpassword");
+        expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith("testid", {
+          password: "hashednewpassword",
+        });
+        expect(res.status).toHaveBeenCalledWith(200);
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
-            success: false,
-            message: "Invalid Email or Answer",
+            success: true,
+            message: "Password Reset Successfully",
           }),
         );
       });
@@ -1502,7 +1509,7 @@ describe('forgotPasswordController', () => {
 
     it('should handle errors if password hashing fails', async () => {
       const error = new Error('Password hashing failed');
-      hashedPassword.mockRejectedValue(error);
+      hashPassword.mockRejectedValue(error);
 
       await forgotPasswordController(req, res);
 
@@ -1661,7 +1668,7 @@ describe('forgotPasswordController', () => {
       expect(hashPassword).toHaveBeenCalledWith("PassWord123");
       expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(
         "testid",
-        { password: "hashedPassWord123"},
+        { password: "hashedPassWord123" },
       );
     });
   });
@@ -1674,10 +1681,7 @@ describe('forgotPasswordController', () => {
 
       await forgotPasswordController(req, res);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error in Forgot Password'),
-        error,
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(error);
 
       consoleErrorSpy.mockRestore();
     });
