@@ -1,6 +1,5 @@
-import { registerController } from "./authController";
+import { registerController, loginController, forgotPasswordController } from "./authController";
 import userModel from "../models/userModel";
-import { loginController } from "./authController";
 import JWT from "jsonwebtoken";
 import { hashPassword, comparePassword } from "./../helpers/authHelper.js";
 import { describe, it } from "node:test";
@@ -627,6 +626,23 @@ describe("registerController", () => {
       );
     });
   });
+
+  describe('Error Logging Tests', () => {
+    it('should log error to console when registration fails', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      const error = new Error('Database error');
+      userModel.findOne.mockRejectedValue(error);
+
+      await registerController(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error in registration'),
+        expect.any(Error),
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
 });
 
 describe("loginController", () => {
@@ -1174,6 +1190,23 @@ describe("loginController", () => {
       });
     });
   });
+
+  describe('Error Logging Tests', () => {
+    it('should log error to console when login fails', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      const error = new Error('Database error');
+      userModel.findOne.mockRejectedValue(error);
+
+      await loginController(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error in login'),
+        error,
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
 });
 
 describe('forgotPasswordController', () => {
@@ -1462,7 +1495,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Internal Server Error",
+          message: "Error in Forgot Password",
         }),
       );
     });
@@ -1477,7 +1510,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Internal Server Error",
+          message: "Error in Forgot Password",
         }),
       );
     });
@@ -1492,7 +1525,7 @@ describe('forgotPasswordController', () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Internal Server Error",
+          message: "Error in Forgot Password",
         }),
       );
     });
@@ -1630,6 +1663,23 @@ describe('forgotPasswordController', () => {
         "testid",
         { password: "hashedPassWord123"},
       );
+    });
+  });
+
+  describe('Error Logging Tests', () => {
+    it('should log error to console when forgot password fails', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      const error = new Error('Database error');
+      userModel.findOne.mockRejectedValue(error);
+
+      await forgotPasswordController(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error in Forgot Password'),
+        error,
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });
