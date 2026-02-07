@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    dob: {
+    DOB: {
       type: String,
       required: true,
     },
