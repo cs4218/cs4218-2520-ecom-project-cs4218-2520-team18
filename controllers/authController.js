@@ -6,7 +6,7 @@ import JWT from "jsonwebtoken";
 
 export const registerController = async (req, res) => {
   try {
-    let { name, email, password, phone, address, dob, answer } = req.body;
+    let { name, email, password, phone, address, DOB, answer } = req.body;
 
     // trim inputs
     name = name?.trim();
@@ -14,7 +14,7 @@ export const registerController = async (req, res) => {
     password = password?.trim();
     phone = phone?.trim();
     address = address?.trim();
-    dob = dob?.trim();
+    DOB = DOB?.trim();
     answer = answer?.trim();
 
     //validations
@@ -33,7 +33,7 @@ export const registerController = async (req, res) => {
     if (!address) {
       return res.status(400).send({ success: false, message: "Address is Required" });
     }
-    if (!dob) {
+    if (!DOB) {
       return res.status(400).send({ success: false, message: "DOB is Required" });
     }
     if (!answer) {
@@ -61,11 +61,11 @@ export const registerController = async (req, res) => {
 
     // DOB format validation (YYYY-MM-DD)
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(dob)) {
+    if (!dobRegex.test(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
     }
     // Check if DOB is a valid date and not in the future
-    const dobDate = new Date(dob);
+    const dobDate = new Date(DOB);
     const now = new Date();
     if (isNaN(dobDate.getTime()) || dobDate > now) {
       return res.status(400).send({ success: false, message: "Invalid or future DOB" });
@@ -91,6 +91,7 @@ export const registerController = async (req, res) => {
       phone,
       address,
       password: hashedPassword,
+      DOB,
       answer,
     }).save();
 
@@ -114,42 +115,55 @@ export const registerController = async (req, res) => {
 //POST LOGIN
 export const loginController = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    // trim inputs
+    email = email?.trim();
+    password = password?.trim();
+
+    const invalidError = "Invalid Email or Password";
     //validation
     if (!email || !password) {
-      return res.status(404).send({
+      return res.status(400).send({
         success: false,
-        message: "Invalid email or password",
+        message: invalidError,
       });
     }
     //check user
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.status(404).send({
+      return res.status(400).send({
         success: false,
-        message: "Email is not registerd",
+        message: invalidError,
       });
     }
     const match = await comparePassword(password, user.password);
     if (!match) {
-      return res.status(200).send({
+      return res.status(400).send({
         success: false,
-        message: "Invalid Password",
+        message: invalidError,
       });
     }
+
+    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
+    if (!emailRegex.test(email)) {
+      return res.status(400).send({ success: false, message: invalidError });
+    }
+
     //token
     const token = await JWT.sign({ _id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
     res.status(200).send({
       success: true,
-      message: "login successfully",
+      message: "Login Successful",
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         address: user.address,
+        DOB: user.DOB,
         role: user.role,
       },
       token,
@@ -158,7 +172,7 @@ export const loginController = async (req, res) => {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: "Error in login",
+      message: "Error in Login",
       error,
     });
   }
