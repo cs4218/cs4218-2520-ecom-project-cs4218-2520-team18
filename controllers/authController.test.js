@@ -8,6 +8,18 @@ jest.mock("../models/userModel.js");
 jest.mock("./../helpers/authHelper.js");
 jest.mock("jsonwebtoken");
 
+// Suppress console output during tests
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.log = jest.fn();
+  console.error = jest.fn();
+});
+afterAll(() => {
+  console.log = originalConsoleLog;
+  console.error = originalConsoleError;
+});
+
 describe("registerController", () => {
   let req, res;
 
