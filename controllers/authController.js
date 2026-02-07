@@ -40,6 +40,10 @@ export const registerController = async (req, res) => {
       return res.status(400).send({ success: false, message: "Answer is Required" });
     }
 
+    // normalise inputs
+    email = email.toLowerCase();
+    answer = answer.toLowerCase();
+
     // Email format validation
     // RFC 5322 Official Standard Email Regex
     const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
@@ -97,14 +101,14 @@ export const registerController = async (req, res) => {
 
     // Exclude password and answer from the response
     const { password: pwd, answer: ans, ...userWithoutSensitive } = user._doc;
-    res.status(201).send({
+    return res.status(201).send({
       success: true,
       message: "User Registered Successfully",
       user: userWithoutSensitive,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).send({
+    console.error(error);
+    return res.status(500).send({
       success: false,
       message: "Error in Registration",
       error,
@@ -129,6 +133,9 @@ export const loginController = async (req, res) => {
         message: invalidError,
       });
     }
+
+    // normalise inputs AFTER validation
+    email = email.toLowerCase();
     //check user
     const user = await userModel.findOne({ email });
     if (!user) {
@@ -154,7 +161,7 @@ export const loginController = async (req, res) => {
     const token = await JWT.sign({ _id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
-    res.status(200).send({
+    return res.status(200).send({
       success: true,
       message: "Login Successful",
       user: {
@@ -169,8 +176,8 @@ export const loginController = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).send({
+    console.error(error);
+    return res.status(500).send({
       success: false,
       message: "Error in Login",
       error,
@@ -182,36 +189,60 @@ export const loginController = async (req, res) => {
 
 export const forgotPasswordController = async (req, res) => {
   try {
-    const { email, answer, newPassword } = req.body;
+    let { email, answer, newPassword } = req.body;
+
+    // trim inputs
+    email = email?.trim();
+    answer = answer?.trim();
+    newPassword = newPassword?.trim();
+
+    // validation
     if (!email) {
-      res.status(400).send({ message: "Emai is required" });
+      return res.status(400).send({ success: false, message: "Email is required" });
     }
     if (!answer) {
-      res.status(400).send({ message: "answer is required" });
+      return res.status(400).send({ success: false, message: "Answer is required" });
     }
     if (!newPassword) {
-      res.status(400).send({ message: "New Password is required" });
+      return res.status(400).send({ success: false, message: "New password is required" });
     }
+
+    // normalise inputs AFTER validation
+    email = email.toLowerCase();
+    answer = answer.toLowerCase();
+
+    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
+    if (!emailRegex.test(email)) {
+      return res.status(400).send({ success: false, message: "Invalid Email or Answer" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).send({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
     //check
     const user = await userModel.findOne({ email, answer });
     //validation
     if (!user) {
-      return res.status(404).send({
+      return res.status(400).send({
         success: false,
-        message: "Wrong Email Or Answer",
+        message: "Invalid Email or Answer",
       });
     }
     const hashed = await hashPassword(newPassword);
     await userModel.findByIdAndUpdate(user._id, { password: hashed });
-    res.status(200).send({
+    return res.status(200).send({
       success: true,
       message: "Password Reset Successfully",
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).send({
+    console.error(error);
+    return res.status(500).send({
       success: false,
-      message: "Something went wrong",
+      message: "Error in Forgot Password",
       error,
     });
   }
