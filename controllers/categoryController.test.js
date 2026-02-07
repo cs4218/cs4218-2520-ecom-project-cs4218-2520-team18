@@ -1,4 +1,4 @@
-import { createCategoryController, updateCategoryController, deleteCategoryController, singleCategoryController} from "./categoryController.js";
+import { createCategoryController, updateCategoryController, deleteCategoryController, singleCategoryController, categoryController} from "./categoryController.js";
 import categoryModel from "../models/categoryModel.js";
 
 jest.mock("../models/categoryModel.js");
@@ -287,6 +287,136 @@ describe("updateCategoryController", () => {
             { new: true }
         );
         expect(res.status).toHaveBeenCalledWith(200);
+    });
+});
+
+describe("categoryController", () => {
+    let req, res;
+
+    beforeEach(() => {
+        req = {};
+        res = {
+            status: jest.fn().mockReturnThis(),
+            send: jest.fn()
+        };
+        
+        jest.clearAllMocks();
+    });
+
+    // Successful retrieval tests
+    it("should return all categories successfully", async () => {
+        const mockCategories = [
+            { _id: "1", name: "Electronics", slug: "electronics" },
+            { _id: "2", name: "Books", slug: "books" },
+            { _id: "3", name: "Clothing", slug: "clothing" }
+        ];
+        categoryModel.find.mockResolvedValue(mockCategories);
+
+        await categoryController(req, res);
+
+        expect(categoryModel.find).toHaveBeenCalledWith({});
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({
+            message: "All Categories List",
+            category: mockCategories,
+        });
+    });
+
+    it("should return empty array when no categories exist", async () => {
+        categoryModel.find.mockResolvedValue([]);
+
+        await categoryController(req, res);
+
+        expect(categoryModel.find).toHaveBeenCalledWith({});
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({
+            message: "All Categories List",
+            category: [],
+        });
+    });
+
+    it("should return single category in array", async () => {
+        const mockCategories = [
+            { _id: "1", name: "Electronics", slug: "electronics" }
+        ];
+        categoryModel.find.mockResolvedValue(mockCategories);
+
+        await categoryController(req, res);
+
+        expect(categoryModel.find).toHaveBeenCalledWith({});
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.send).toHaveBeenCalledWith({
+            message: "All Categories List",
+            category: mockCategories,
+        });
+    });
+
+    // Error handling tests
+    it("should handle database errors", async () => {
+        const errorMessage = new Error("Database error");
+        categoryModel.find.mockRejectedValue(errorMessage);
+
+        await categoryController(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.send).toHaveBeenCalledWith({
+            error: errorMessage,
+            message: "Error while getting all categories",
+        });
+    });
+
+    // Edge cases
+    describe("Edge cases", () => {
+        it("should handle large number of categories", async () => {
+            const mockCategories = Array.from({ length: 1000 }, (_, i) => ({
+                _id: `${i + 1}`,
+                name: `Category ${i + 1}`,
+                slug: `category-${i + 1}`
+            }));
+            categoryModel.find.mockResolvedValue(mockCategories);
+
+            await categoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "All Categories List",
+                category: mockCategories,
+            });
+        });
+
+        it("should handle categories with special characters", async () => {
+            const mockCategories = [
+                { _id: "1", name: "Electronics & Gadgets", slug: "electronics-gadgets" },
+                { _id: "2", name: "Books/Magazines", slug: "books-magazines" },
+                { _id: "3", name: "Clothing (Men's)", slug: "clothing-mens" }
+            ];
+            categoryModel.find.mockResolvedValue(mockCategories);
+
+            await categoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "All Categories List",
+                category: mockCategories,
+            });
+        });
+
+        it("should handle categories with Unicode characters", async () => {
+            const mockCategories = [
+                { _id: "1", name: "电子产品", slug: "dian-zi-chan-pin" },
+                { _id: "2", name: "书籍", slug: "shu-ji" },
+                { _id: "3", name: "服装 👕", slug: "fu-zhuang" }
+            ];
+            categoryModel.find.mockResolvedValue(mockCategories);
+
+            await categoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "All Categories List",
+                category: mockCategories,
+            });
+        });
     });
 });
 
