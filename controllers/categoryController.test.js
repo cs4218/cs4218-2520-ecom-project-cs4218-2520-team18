@@ -40,6 +40,18 @@ describe("createCategoryController", () => {
         });
     });
 
+    it("should return message if capitalized category already exists", async () => {
+        req.body.name = "electronics";
+        categoryModel.findOne.mockResolvedValue({ name: "Electronics" });
+
+        await createCategoryController(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.send).toHaveBeenCalledWith({
+            message: "Category already exists",
+        });
+    });
+
     it("should create new category successfully", async () => {
         const mockSave = jest.fn().mockResolvedValue({ name: "Electronics", slug: "electronics" });
         categoryModel.findOne.mockResolvedValue(null);
