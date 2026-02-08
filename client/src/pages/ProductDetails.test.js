@@ -19,12 +19,8 @@ jest.mock('../components/Layout', () => ({
 import { useParams, useNavigate } from 'react-router-dom';
 
 describe('ProductDetails Page', () => {
-  let mockNavigate;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mockNavigate = jest.fn();
-    useNavigate.mockReturnValue(mockNavigate);
   });
 
   describe('getProduct function', () => {
@@ -331,6 +327,9 @@ describe('ProductDetails Page', () => {
   describe('Navigation', () => {
     it('should navigate to correct product page when "More Details" is clicked', async () => {
       // Arrange
+      const mockNavigate = jest.fn();
+      useNavigate.mockReturnValue(mockNavigate);
+
       const mockProduct = {
         _id: '123',
         name: 'Main Product',
@@ -355,12 +354,10 @@ describe('ProductDetails Page', () => {
 
       // Act
       const { getByText } = render(<ProductDetails />);
-
       await waitFor(() => {
         expect(screen.getByText('Related Product')).toBeTruthy();
         expect(axios.get).toHaveBeenCalledTimes(2);
       });
-
       const moreDetailsButton = getByText('More Details');
       moreDetailsButton.click();
 
