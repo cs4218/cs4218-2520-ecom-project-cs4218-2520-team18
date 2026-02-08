@@ -908,7 +908,7 @@ describe("loginController", () => {
       );
     });
 
-    it('should trim leading/trailing spaces from password and login successfully', async () => {
+    it('should NOT trim leading/trailing spaces from password and login successfully', async () => {
       req.body.email = "test@example.com";
       req.body.password = "   password   ";
 
@@ -927,7 +927,7 @@ describe("loginController", () => {
 
       await loginController(req, res);
 
-      expect(comparePassword).toHaveBeenCalledWith("password", "hashedpassword");
+      expect(comparePassword).toHaveBeenCalledWith("   password   ", "hashedpassword");
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1475,7 +1475,7 @@ describe('forgotPasswordController', () => {
         );
       });
 
-      it('should trim whitespace from new password', async () => {
+      it('should NOT trim whitespace from new password', async () => {
         req.body.newPassword = "   newpassword   ";
         const mockUser = {
           _id: "testid",
@@ -1488,7 +1488,7 @@ describe('forgotPasswordController', () => {
 
         await forgotPasswordController(req, res);
 
-        expect(hashPassword).toHaveBeenCalledWith("newpassword");
+        expect(hashPassword).toHaveBeenCalledWith("   newpassword   ");
         expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith("testid", {
           password: "hashednewpassword",
         });
