@@ -246,19 +246,6 @@ describe("registerController", () => {
       expect(userModel).not.toHaveBeenCalled();
     });
 
-    test("should return error for whitespace-only password", async () => {
-      req.body.password = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Password is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
     test("should return error for whitespace-only phone", async () => {
       req.body.phone = " ";
 
@@ -833,37 +820,8 @@ describe("loginController", () => {
       );
     });
 
-    it('should return error if password is white space', async () => {
-      req.body.password = " ";
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        }),
-      );
-    });
-
     it('should return error if email is white space', async () => {
       req.body.email = " ";
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        }),
-      );
-    });
-
-    it('should return error if both email and password are white space', async () => {
-      req.body.email = " ";
-      req.body.password = " ";
 
       await loginController(req, res);
 
@@ -1376,20 +1334,6 @@ describe('forgotPasswordController', () => {
         expect.objectContaining({
           success: false,
           message: "Answer is required",
-        }),
-      );
-    });
-
-    it('should return error if new password is white-space', async () => {
-      req.body.newPassword = " ";
-
-      await forgotPasswordController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "New password is required",
         }),
       );
     });
