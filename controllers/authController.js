@@ -3,6 +3,7 @@ import orderModel from "../models/orderModel.js";
 
 import { comparePassword, hashPassword } from "./../helpers/authHelper.js";
 import JWT from "jsonwebtoken";
+import { validateEmail, validatePhoneE164, validatePassword, validateDOB, validateDOBNotFuture } from "../helpers/validationHelper.js";
 
 export const registerController = async (req, res) => {
   try {
@@ -45,17 +46,15 @@ export const registerController = async (req, res) => {
 
     // Email format validation
     // RFC 5322 Official Standard Email Regex
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: "Invalid Email Format" });
     }
 
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
-    if (!phoneRegex.test(phone)) {
+    if (!validatePhoneE164(phone)) {
       return res.status(400).send({ success: false, message: "Invalid Phone Number" });
     }
 
-    if (password.length < 6) {
+    if (!validatePassword(password)) {
       return res.status(400).send({
         success: false,
         message: "Password must be at least 6 characters long",
@@ -63,18 +62,13 @@ export const registerController = async (req, res) => {
     }
 
     // DOB format validation (YYYY-MM-DD)
-    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(DOB)) {
+    if (!validateDOB(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
     }
     // Check if DOB is a valid date and not in the future
-    const dobDate = new Date(DOB);
-    const now = new Date();
-    if (isNaN(dobDate.getTime()) || dobDate > now) {
+    if (!validateDOBNotFuture(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid or future DOB" });
     }
-
-
 
     //check user
     const exisitingUser = await userModel.findOne({ email });
@@ -150,8 +144,7 @@ export const loginController = async (req, res) => {
       });
     }
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: invalidError });
     }
 
@@ -208,12 +201,11 @@ export const forgotPasswordController = async (req, res) => {
     email = email.toLowerCase();
     answer = answer.toLowerCase();
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: "Invalid Email or Answer" });
     }
 
-    if (newPassword.length < 6) {
+    if (!validatePassword(newPassword)) {
       return res.status(400).send({
         success: false,
         message: "New password must be at least 6 characters long",
