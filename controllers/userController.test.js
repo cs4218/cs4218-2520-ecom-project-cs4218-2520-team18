@@ -56,6 +56,14 @@ describe("updateProfileController", () => {
       };
       const { password, ...updatedUserDataSensitive } = updatedUserData;
 
+      req.body = {
+        name: "Updated Name",
+        password: "newpassword123",
+        phone: "+1234567890",
+        DOB: "2000-01-02",
+        address: "456 New St",
+      };
+
       userModel.findById.mockResolvedValue(existingUser);
       hashPassword.mockResolvedValue("newhashedpassword");
       userModel.findByIdAndUpdate.mockResolvedValue(updatedUserData);
@@ -206,7 +214,7 @@ describe("updateProfileController", () => {
             {
               name: "Old Name",
               password: "oldhashedpassword",
-              phone: "+1234567890",
+              phone: phone,
               DOB: "2000-01-01",
               address: "123 Old St",
             },
@@ -312,6 +320,57 @@ describe("updateProfileController", () => {
         message: "Profile Updated Successfully",
         updatedUser: updatedUserDataSensitive,
       });
+    });
+
+    it("should not update email even if provided in request body", async () => {
+      const existingUser = {
+        _id: "user123",
+        name: "Old Name",
+        email: "old@example.com",
+        phone: "+0987654321",
+        DOB: "2000-01-01",
+        address: "123 Old St",
+        password: "oldhashedpassword",
+      };
+
+      const updatedUserData = {
+        ...existingUser,
+        name: "Updated Name",
+      };
+
+      const { password, ...updatedUserDataSensitive } = updatedUserData;
+
+      req.body = {
+        name: "Updated Name",
+        email: "newemail@example.com", // Attempting to change email
+      };
+
+      userModel.findById.mockResolvedValue(existingUser);
+      userModel.findByIdAndUpdate.mockResolvedValue(updatedUserData);
+
+      await updateProfileController(req, res);
+
+      // Verify that email was NOT included in the update
+      expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        "user123",
+        {
+          name: "Updated Name",
+          password: "oldhashedpassword",
+          phone: "+0987654321",
+          DOB: "2000-01-01",
+          address: "123 Old St",
+          // Note: NO email field here
+        },
+        { new: true },
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        success: true,
+        message: "Profile Updated Successfully",
+        updatedUser: updatedUserDataSensitive,
+      });
+      // Verify the returned user still has the old email
+      expect(updatedUserDataSensitive.email).toBe("old@example.com");
     });
   });
 
@@ -509,7 +568,7 @@ describe("updateProfileController", () => {
           expect(res.status).toHaveBeenCalledWith(400);
           expect(res.send).toHaveBeenCalledWith({
             success: false,
-            message: "Invalid phone number",
+            message: "Invalid Phone Number",
           });
         },
       );
@@ -527,7 +586,7 @@ describe("updateProfileController", () => {
           expect(res.status).toHaveBeenCalledWith(400);
           expect(res.send).toHaveBeenCalledWith({
             success: false,
-            message: "Invalid date of birth",
+            message: "Invalid DOB format. Please use YYYY-MM-DD",
           });
           expect(userModel.findById).not.toHaveBeenCalled();
         },
@@ -726,22 +785,25 @@ describe("updateProfileController", () => {
           password: "oldhashedpassword",
         };
 
-        const updatedUserData = { ...existingUser, password: "newhashedpassword" };
+        const updatedUserData = { ...existingUser, password: "newhashedpasswordWithSpaces" };
         const { password, ...updatedUserDataSensitive } = updatedUserData;
 
-        req.body = { password: "   newhashedpassword   " };
+        req.body = { password: "   newpassword123   " };
 
         userModel.findById.mockResolvedValue(existingUser);
+        hashPassword.mockResolvedValue("newhashedpasswordWithSpaces");
         userModel.findByIdAndUpdate.mockResolvedValue(updatedUserData);
 
         await updateProfileController(req, res);
 
         expect(userModel.findById).toHaveBeenCalledWith("user123");
+        // Verify hashPassword was called with the password INCLUDING whitespace
+        expect(hashPassword).toHaveBeenCalledWith("   newpassword123   ");
         expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(
           "user123",
           {
             name: "Old Name",
-            password: "   newhashedpassword   ",
+            password: "newhashedpasswordWithSpaces", // The HASHED result, not the raw password
             phone: "+0987654321",
             DOB: "2000-01-01",
             address: "123 Old St",
@@ -758,6 +820,7 @@ describe("updateProfileController", () => {
       });
     });
   });
+
   describe("Robustness Tests", () => {
     it("should return error 400 if request body is empty", async () => {
       req.body = {};
@@ -779,14 +842,13 @@ describe("updateProfileController", () => {
         address: "123 Old St",
         password: "oldhashedpassword",
       });
-      const { password, ...updatedUserDataSensitive } = updatedUserData;
 
       await updateProfileController(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith({
         success: false,
-        message: "Invalid input. At least one field must be provided.",
+        message: "Request body is empty",
       });
     });
 
@@ -807,35 +869,51 @@ describe("updateProfileController", () => {
       });
     });
   });
-});
 
-describe("Error Handling Tests", () => {
-  it("should return error 500 if database error occurs", async () => {
-    const error = new Error("Database error");
-    userModel.findById.mockRejectedValue(error);
+  describe("Error Handling Tests", () => {
+    it("should return error 500 if database error occurs", async () => {
+      const error = new Error("Database error");
+      req.body = { name: "Updated Name" }; // Need non-empty body to pass initial validation
+      userModel.findById.mockRejectedValue(error);
 
-    await updateProfileController(req, res);
+      await updateProfileController(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Error while updating profile",
-      error: error,
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "Error while updating profile",
+        error: error,
+      });
+    });
+
+    describe("Error Logging Tests", () => {
+      it("should log error if database error occurs", async () => {
+        const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+        const error = new Error("Database error");
+        req.body = { name: "Updated Name" }; // Need non-empty body to pass initial validation
+        userModel.findById.mockRejectedValue(error);
+
+        await updateProfileController(req, res);
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+      });
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("should return error 400 if user does not exist", async () => {
+      req.body = { name: "Updated Name" }; // Need non-empty body to pass initial validation
+      userModel.findById.mockResolvedValue(null);
+
+      await updateProfileController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: "User not found",
+      });
     });
   });
 });
 
-describe("Edge Cases", () => {
-  it("should return error 400 if user is not found", async () => {
-    userModel.findById.mockResolvedValue(null);
-
-    await updateProfileController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "User not found",
-    });
-  });
-});
 
