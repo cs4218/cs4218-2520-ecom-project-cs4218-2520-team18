@@ -54,16 +54,27 @@ describe("Validation Helper Tests", () => {
             expect(validatePhoneE164("12")).toBe(true);
         });
 
-        it("should return true for maximum valid length (15 digits)", () => {
-            // 1 + 14 digits
-            const maxDigits = "1" + "2".repeat(14);
-            expect(validatePhoneE164(maxDigits)).toBe(true);
-            expect(validatePhoneE164("+" + maxDigits)).toBe(true);
+        it("should return false for length > 2 (3 digit)", () => {
+            expect(validatePhoneE164("123")).toBe(false);
+            expect(validatePhoneE164("+123")).toBe(false);
         });
 
         it("should return false for length < 2 (1 digit)", () => {
             expect(validatePhoneE164("1")).toBe(false);
             expect(validatePhoneE164("+1")).toBe(false);
+        });
+
+        it("should return true for length < 15 (14 digits)", () => {
+            const maxDigits = "2".repeat(14);
+            expect(validatePhoneE164(maxDigits)).toBe(true);
+            expect(validatePhoneE164("+" + maxDigits)).toBe(true);
+        });
+
+        it("should return true for maximum valid length (15 digits)", () => {
+            // 1 + 14 digits
+            const maxDigits = "1" + "2".repeat(14);
+            expect(validatePhoneE164(maxDigits)).toBe(true);
+            expect(validatePhoneE164("+" + maxDigits)).toBe(true);
         });
 
         it("should return false for length > 15 (16 digits)", () => {
