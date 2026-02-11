@@ -3,11 +3,6 @@ export const validateEmail = (email) => {
     return emailRegex.test(email);
 }
 
-export const validatePhone = (phone) => {
-    const phoneRegex = /^[0-9]{10}$/;
-    return phoneRegex.test(phone);
-}
-
 export const validatePhoneE164 = (phone) => {
     const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
     return phoneRegex.test(phone);
@@ -22,7 +17,14 @@ export const validatePassword = (password) => {
 
 export const validateDOB = (DOB) => {
     const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    return dobRegex.test(DOB);
+    if (!dobRegex.test(DOB)) return false;
+
+    const [year, month, day] = DOB.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
+    return date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day;
 }
 
 export const validateDOBNotFuture = (DOB) => {
