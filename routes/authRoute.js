@@ -4,8 +4,8 @@ import {
   loginController,
   testController,
   forgotPasswordController,
-  updateProfileController,
 } from "../controllers/authController.js";
+import { updateProfileController } from "../controllers/userController.js";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 
 //router object
