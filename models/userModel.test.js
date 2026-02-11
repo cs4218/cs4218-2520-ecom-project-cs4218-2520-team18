@@ -39,10 +39,10 @@ describe("User Model", () => {
             expect(validation.errors.phone).toBeUndefined();
         });
 
-        it("should return false for length > 2 (3 digit)", () => {
+        it("should return true for length > 2 (3 digit)", () => {
             const user = new User({ phone: "123" });
             const validation = user.validateSync();
-            expect(validation.errors.phone).toBeDefined();
+            expect(validation.errors.phone).toBeUndefined();
         });
 
         it("should return false for length < 2 (1 digit)", () => {

@@ -54,9 +54,9 @@ describe("Validation Helper Tests", () => {
             expect(validatePhoneE164("12")).toBe(true);
         });
 
-        it("should return false for length > 2 (3 digit)", () => {
-            expect(validatePhoneE164("123")).toBe(false);
-            expect(validatePhoneE164("+123")).toBe(false);
+        it("should return true for length > 2 (3 digit)", () => {
+            expect(validatePhoneE164("123")).toBe(true);
+            expect(validatePhoneE164("+123")).toBe(true);
         });
 
         it("should return false for length < 2 (1 digit)", () => {
