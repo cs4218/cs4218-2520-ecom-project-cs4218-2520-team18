@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { validateDOB, validateEmail, validatePassword, validatePhoneE164, validateDOBNotFuture } from "../helpers/validationHelper";
+import { validateDOB, validateEmail, validatePassword, validatePhoneE164, validateDOBNotFuture } from "../helpers/validationHelper.js";
 
 const userSchema = new mongoose.Schema(
   {
