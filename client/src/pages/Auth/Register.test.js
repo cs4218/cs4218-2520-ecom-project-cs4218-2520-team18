@@ -670,9 +670,11 @@ describe("Register Component", () => {
       });
       fireEvent.click(getByText("REGISTER"));
 
-      expect(getByText("REGISTER")).toBeDisabled();
+      await waitFor(() => expect(getByText("REGISTER")).toBeDisabled());
 
       await waitFor(() => expect(axios.post).toHaveBeenCalled());
+
+      await waitFor(() => expect(getByText("REGISTER")).not.toBeDisabled());
     });
   });
 
