@@ -28,6 +28,10 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 
+jest.mock("../../components/Layout", () => ({ children, title }) => (
+  <div data-testid="layout-mock" data-title={title}>{children}</div>
+));
+
 // Suppress console output during tests
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
@@ -109,7 +113,7 @@ describe("Register Component", () => {
 
   it("should display error message on failed registration", async () => {
     const errorMessage = "Email already exists";
-    axios.post.mockRejectedValueOnce({ success: false, message: errorMessage });
+    axios.post.mockResolvedValueOnce({ data: { success: false, message: errorMessage } });
     axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
     const { getByText, getByPlaceholderText } = render(
@@ -381,6 +385,45 @@ describe("Register Component", () => {
       });
     });
 
+    it("should prevent submission for non-existent DOB (e.g. Feb 30)", async () => {
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+      fireEvent.change(getByPlaceholderText("Enter Your Name"), {
+        target: { value: "John Doe" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Phone"), {
+        target: { value: "+1234567890" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Address"), {
+        target: { value: "123 Street" },
+      });
+      const dobInput = getByPlaceholderText("Enter Your DOB");
+      Object.defineProperty(dobInput, 'value', { value: '2021-02-30', writable: true });
+      fireEvent.change(dobInput, { target: { value: '2021-02-30' } });
+      fireEvent.change(getByPlaceholderText("What is Your Favorite sports"), {
+        target: { value: "Football" },
+      });
+      fireEvent.click(getByText("REGISTER"));
+
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith(
+          "Date of Birth must be a valid date",
+        );
+      });
+    });
+
     it("should prevent submission for future DOB", async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 1);
@@ -502,6 +545,46 @@ describe("Register Component", () => {
 
       await waitFor(() => expect(axios.post).toHaveBeenCalled());
       expect(toast.error).toHaveBeenCalledWith("Network Error");
+    });
+
+    it('should use default error message if no message is provided', async () => {
+      axios.post.mockRejectedValueOnce(new Error());
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // fill required fields so the form submits and triggers the error
+      fireEvent.change(getByPlaceholderText("Enter Your Name"), {
+        target: { value: "John Doe" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Phone"), {
+        target: { value: "1234567890" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Address"), {
+        target: { value: "123 Street" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your DOB"), {
+        target: { value: "2000-01-01" },
+      });
+      fireEvent.change(getByPlaceholderText("What is Your Favorite sports"), {
+        target: { value: "Football" },
+      });
+      fireEvent.click(getByText("REGISTER"));
+
+      await waitFor(() => expect(axios.post).toHaveBeenCalled());
+      expect(toast.error).toHaveBeenCalledWith("Something went wrong");
     });
 
     it("should log errors to console", async () => {
@@ -662,6 +745,20 @@ describe("Register Component", () => {
       expect(getByPlaceholderText("What is Your Favorite sports").type).toBe(
         "text",
       );
+    });
+  });
+
+  describe("Layout Title", () => {
+    it('should set the document title to "Register - Ecommerce App"', async () => {
+      render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+      const layout = document.querySelector("[data-testid='layout-mock']");
+      expect(layout).toHaveAttribute("data-title", "Register - Ecommerce App");
     });
   });
 });
