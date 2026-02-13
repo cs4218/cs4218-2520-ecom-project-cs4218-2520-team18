@@ -20,13 +20,13 @@ const Register = () => {
     e.preventDefault();
     // prepare payload and validate
     const payload = {
-      name: typeof name === 'string' ? name.trim() : name,
-      email: typeof email === 'string' ? email.toLowerCase().trim() : email,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password,
-      phone: typeof phone === 'string' ? phone.trim() : phone,
-      address: typeof address === 'string' ? address.trim() : address,
-      DOB: typeof DOB === 'string' ? DOB.trim() : DOB,
-      answer: typeof answer === 'string' ? answer.toLowerCase().trim() : answer,
+      phone: phone.trim(),
+      address: address.trim(),
+      DOB: DOB.trim(),
+      answer: answer.toLowerCase().trim(),
     };
 
     // Basic client-side validation (keeps tests predictable) form
@@ -57,9 +57,18 @@ const Register = () => {
       toast.error('Date of Birth must be a valid date');
       return;
     }
-    const dobDate = new Date(payload.DOB);
     const today = new Date();
-    if (isNaN(dobDate.getTime())) {
+    // Strict calendar validation to detect non-existent dates like 2021-02-30
+    const [yStr, mStr, dStr] = payload.DOB.split("-");
+    const y = Number(yStr);
+    const m = Number(mStr);
+    const d = Number(dStr);
+    const dobDate = new Date(y, m - 1, d);
+    if (
+      dobDate.getFullYear() !== y ||
+      dobDate.getMonth() !== m - 1 ||
+      dobDate.getDate() !== d
+    ) {
       toast.error('Date of Birth must be a valid date');
       return;
     }

@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import Layout from "./../../components/Layout";
 import axios from "axios";
@@ -9,16 +10,52 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [answer, setAnswer] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // form function
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // normalize inputs
+    const payload = {
+      email: email.toLowerCase().trim(),
+      answer: answer.toLowerCase().trim(),
+      newPassword,
+    };
+
+    // client-side validation
+    if (!payload.email) {
+      toast.error("Email is required");
+      return;
+    }
+
+    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;;
+    if (!emailRegex.test(payload.email)) {
+      toast.error("Invalid email format");
+      return;
+    }
+
+    if (!payload.answer) {
+      toast.error("Security answer is required");
+      return;
+    }
+
+    if (!payload.newPassword) {
+      toast.error("New password is required");
+      return;
+    }
+
+    if (payload.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await axios.post("/api/v1/auth/forgot-password", {
-        email,
-        answer,
-        newPassword,
+        email: payload.email,
+        answer: payload.answer,
+        newPassword: payload.newPassword,
       });
       if (res && res.data.success) {
         toast.success(res.data.message);
@@ -28,13 +65,16 @@ const ForgotPassword = () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong");
+      const message = error?.response?.data?.message || error?.message || "An unexpected error occurred";
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
   return (
     <Layout title="Forgot Password - Ecommerce App">
       <div className="form-container " style={{ minHeight: "90vh" }}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate={process.env.NODE_ENV === 'test'}>
           <h4 className="title">Forgot Password</h4>
 
           <div className="mb-3">
@@ -70,7 +110,7 @@ const ForgotPassword = () => {
             />
           </div>
           <div className="mb-3">
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary" disabled={loading}>
               RESET PASSWORD
             </button>
           </div>
