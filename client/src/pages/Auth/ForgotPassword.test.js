@@ -59,12 +59,12 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 
-describe("ForgetPassword Component", () => {
+describe("ForgotPassword Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("renders forget password form", () => {
+  it("renders forgot password form", () => {
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/forgot-password"]}>
         <Routes>
