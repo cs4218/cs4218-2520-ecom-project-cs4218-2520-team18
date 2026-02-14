@@ -3,6 +3,15 @@ import Layout from "./../../components/Layout";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import {
+  isEmpty,
+  isValidEmail,
+  isValidPhone,
+  isValidDOBFormat,
+  isValidDOBStrict,
+  isDOBNotFuture,
+  isPasswordLongEnough,
+} from "../../helpers/validation";
 import "../../styles/AuthStyles.css";
 const Register = () => {
   const [name, setName] = useState("");
@@ -35,44 +44,27 @@ const Register = () => {
       return;
     }
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;;
-    if (!emailRegex.test(payload.email)) {
+    if (!isValidEmail(payload.email)) {
       toast.error('Invalid Email');
       return;
     }
 
-    if (!payload.password || payload.password.length < 6) {
+    if (!isPasswordLongEnough(payload.password, 6)) {
       toast.error('Password must be at least 6 characters long');
       return;
     }
 
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(payload.phone)) {
+    if (!isValidPhone(payload.phone)) {
       toast.error('Phone number must be in E.164 format');
       return;
     }
 
-    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(payload.DOB)) {
+    if (!isValidDOBFormat(payload.DOB) || !isValidDOBStrict(payload.DOB)) {
       toast.error('Date of Birth must be a valid date');
       return;
     }
-    const today = new Date();
-    // Strict calendar validation to detect non-existent dates like 2021-02-30
-    const [yStr, mStr, dStr] = payload.DOB.split("-");
-    const y = Number(yStr);
-    const m = Number(mStr);
-    const d = Number(dStr);
-    const dobDate = new Date(y, m - 1, d);
-    if (
-      dobDate.getFullYear() !== y ||
-      dobDate.getMonth() !== m - 1 ||
-      dobDate.getDate() !== d
-    ) {
-      toast.error('Date of Birth must be a valid date');
-      return;
-    }
-    if (dobDate >= new Date(today.toDateString())) {
+
+    if (!isDOBNotFuture(payload.DOB)) {
       toast.error('Date of Birth cannot be a future date');
       return;
     }
