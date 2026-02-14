@@ -83,12 +83,14 @@ export const categoryController = async (req, res) => {
   try {
     const category = await categoryModel.find({});
     res.status(200).send({
+      success: true,
       message: "All Categories List",
       category,
     });
   } catch (error) {
     console.log(error);
     res.status(500).send({
+      success: false,
       error,
       message: "Error while getting all categories",
     });
@@ -100,11 +102,6 @@ export const singleCategoryController = async (req, res) => {
   try {
     const { slug } = req.params;
     
-    // Validate slug
-    if (!slug || !slug.trim()) {
-      return res.status(400).send({ message: "Slug is required" });
-    }
-    
     // Trim whitespace from slug
     const trimmedSlug = slug.trim();
     
@@ -113,6 +110,7 @@ export const singleCategoryController = async (req, res) => {
     // Check if category was found
     if (!category) {
       return res.status(404).send({
+        success: false,
         message: "Category not found",
       });
     }
@@ -125,6 +123,7 @@ export const singleCategoryController = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({
+      success: false,
       error,
       message: "Error while getting single category",
     });
