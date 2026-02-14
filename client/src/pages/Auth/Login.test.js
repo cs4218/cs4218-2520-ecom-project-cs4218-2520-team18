@@ -1,10 +1,10 @@
-import React from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react";
-import axios from "axios";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import "@testing-library/jest-dom/extend-expect";
-import toast from "react-hot-toast";
-import Login from "./Login";
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
+import axios from 'axios';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import '@testing-library/jest-dom';
+import toast from 'react-hot-toast';
+import Login from './Login';
 import { useAuth } from "../../context/auth";
 
 // Mocking axios.post
@@ -15,9 +15,13 @@ jest.mock("../../context/auth", () => ({
   useAuth: jest.fn(() => [null, jest.fn()]), // Mock useAuth hook to return null state and a mock function for setAuth
 }));
 
-jest.mock("../../context/cart", () => ({
-  useCart: jest.fn(() => [null, jest.fn()]), // Mock useCart hook to return null state and a mock function
-}));
+jest.mock('../../context/cart', () => ({
+    useCart: jest.fn(() => [null, jest.fn()]) // Mock useCart hook to return null state and a mock function
+  }));
+    
+jest.mock('../../context/search', () => ({
+    useSearch: jest.fn(() => [{ keyword: '' }, jest.fn()]) // Mock useSearch hook to return null state and a mock function
+  }));  
 
 jest.mock("../../context/search", () => ({
   useSearch: jest.fn(() => [{ keyword: "" }, jest.fn()]), // Mock useSearch hook to return null state and a mock function
