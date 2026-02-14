@@ -4,7 +4,6 @@ import Layout from "./../../components/Layout";
 import { useAuth } from "../../context/auth";
 import toast from "react-hot-toast";
 import {
-  isEmpty,
   isValidPhone,
   isValidDOBFormat,
   isDOBNotFuture,
