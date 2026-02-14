@@ -36,12 +36,13 @@ export const isValidDOBStrict = (dob) => {
 };
 
 export const isDOBNotFuture = (dob) => {
-  if (isEmpty(dob)) return true;
+  // Empty DOB should be treated as invalid (DOB is required)
+  if (isEmpty(dob)) return false;
   const dobDate = new Date(dob);
   const now = new Date();
   dobDate.setHours(0, 0, 0, 0);
   now.setHours(0, 0, 0, 0);
-  return dobDate <= now;
+  return dobDate < now;
 };
 
 export const isPasswordLongEnough = (password, min = 6) => {

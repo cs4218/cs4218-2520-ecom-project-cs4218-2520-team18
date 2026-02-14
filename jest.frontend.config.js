@@ -26,6 +26,7 @@ export default {
     "<rootDir>/client/src/components/Routes/*.test.js",
     "<rootDir>/client/src/components/*.test.js",
     "<rootDir>/client/src/pages/user/*.test.js",
+    "<rootDir>/client/src/helpers/*.test.js",
   ],
 
   // jest code coverage
@@ -36,6 +37,7 @@ export default {
     "client/src/components/Routes/**",
     "client/src/components/*",
     "client/src/pages/user/**",
+    "client/src/helpers/**",
   ],
   coverageThreshold: {
     global: {
