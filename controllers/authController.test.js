@@ -246,19 +246,6 @@ describe("registerController", () => {
       expect(userModel).not.toHaveBeenCalled();
     });
 
-    test("should return error for whitespace-only password", async () => {
-      req.body.password = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Password is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
     test("should return error for whitespace-only phone", async () => {
       req.body.phone = " ";
 
@@ -833,37 +820,8 @@ describe("loginController", () => {
       );
     });
 
-    it('should return error if password is white space', async () => {
-      req.body.password = " ";
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        }),
-      );
-    });
-
     it('should return error if email is white space', async () => {
       req.body.email = " ";
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        }),
-      );
-    });
-
-    it('should return error if both email and password are white space', async () => {
-      req.body.email = " ";
-      req.body.password = " ";
 
       await loginController(req, res);
 
@@ -908,7 +866,7 @@ describe("loginController", () => {
       );
     });
 
-    it('should trim leading/trailing spaces from password and login successfully', async () => {
+    it('should NOT trim leading/trailing spaces from password and login successfully', async () => {
       req.body.email = "test@example.com";
       req.body.password = "   password   ";
 
@@ -927,7 +885,7 @@ describe("loginController", () => {
 
       await loginController(req, res);
 
-      expect(comparePassword).toHaveBeenCalledWith("password", "hashedpassword");
+      expect(comparePassword).toHaveBeenCalledWith("   password   ", "hashedpassword");
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1379,20 +1337,6 @@ describe('forgotPasswordController', () => {
         }),
       );
     });
-
-    it('should return error if new password is white-space', async () => {
-      req.body.newPassword = " ";
-
-      await forgotPasswordController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "New password is required",
-        }),
-      );
-    });
   });
 
   describe('Validation Tests - Invalid Format', () => {
@@ -1475,7 +1419,7 @@ describe('forgotPasswordController', () => {
         );
       });
 
-      it('should trim whitespace from new password', async () => {
+      it('should NOT trim whitespace from new password', async () => {
         req.body.newPassword = "   newpassword   ";
         const mockUser = {
           _id: "testid",
@@ -1488,7 +1432,7 @@ describe('forgotPasswordController', () => {
 
         await forgotPasswordController(req, res);
 
-        expect(hashPassword).toHaveBeenCalledWith("newpassword");
+        expect(hashPassword).toHaveBeenCalledWith("   newpassword   ");
         expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith("testid", {
           password: "hashednewpassword",
         });

@@ -118,14 +118,15 @@ export const singleCategoryController = async (req, res) => {
     }
     
     res.status(200).send({
-      message: "Get single Category successfully",
+      success: true,
+      message: "Get single category successfully",
       category,
     });
   } catch (error) {
     console.log(error);
     res.status(500).send({
       error,
-      message: "Error while getting single Category",
+      message: "Error while getting single category",
     });
   }
 };
