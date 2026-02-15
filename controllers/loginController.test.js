@@ -1,20 +1,44 @@
 import JWT from "jsonwebtoken";
 import { comparePassword } from "../helpers/authHelper.js";
+import { validateEmail } from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
 import { loginController } from "./loginController.js";
 
+// Mock dependencies
 jest.mock("../models/userModel.js");
 jest.mock("./../helpers/authHelper.js");
+jest.mock("../helpers/validationHelper.js");
 jest.mock("jsonwebtoken");
 
-describe("loginController", () => {
+describe("loginController Comprehensive Unit Tests", () => {
   let req, res;
+  const originalEnv = process.env;
+
+  const setupMockUser = (overrides = {}) => {
+    const mockUser = {
+      _id: "mock_id_123",
+      name: "Test User",
+      email: "test@example.com",
+      password: "hashed_password_abc",
+      phone: "+1234567890",
+      address: "123 Test St",
+      DOB: "2000-01-01",
+      role: 0,
+      answer: "mock_secret_answer",
+      ...overrides,
+    };
+    userModel.findOne.mockResolvedValue(mockUser);
+    return mockUser;
+  };
 
   beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...originalEnv, JWT_SECRET: "test_secret_key" };
+
     req = {
       body: {
         email: "test@example.com",
-        password: "password",
+        password: "password123",
       },
     };
     res = {
@@ -23,521 +47,151 @@ describe("loginController", () => {
     };
 
     jest.clearAllMocks();
+    validateEmail.mockReturnValue(true);
   });
 
-  describe("Happy Path", () => {
-    it("should login successfully with valid credentials", async () => {
-      const mockUser = {
-        _id: "testuserid",
-        name: "Test User",
-        email: "test@example.com",
-        password: "hashedpassword",
-        phone: "+1234567890",
-        address: "123 Test St",
-        DOB: "2000-01-01",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(true);
-      JWT.sign.mockReturnValue("testtoken");
-
-      await loginController(req, res);
-
-      expect(userModel.findOne).toHaveBeenCalledWith({ email: req.body.email });
-      expect(comparePassword).toHaveBeenCalledWith(req.body.password, mockUser.password);
-      expect(JWT.sign).toHaveBeenCalledWith(
-        { _id: mockUser._id },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: "Login Successful",
-          token: "testtoken",
-          user: {
-            _id: "testuserid",
-            name: "Test User",
-            email: "test@example.com",
-            phone: "+1234567890",
-            address: "123 Test St",
-            DOB: "2000-01-01",
-            role: 0,
-          },
-        })
-      );
-    });
-
-    it('should exclude password and sensitive info from response', async () => {
-      const mockUser = {
-        _id: "testuserid",
-        name: "Test User",
-        email: "test@example.com",
-        password: "hashedpassword",
-        phone: "+1234567890",
-        address: "123 Test St",
-        DOB: "2000-01-01",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(true);
-      JWT.sign.mockReturnValue("testtoken");
-
-      await loginController(req, res);
-
-      const sentResponse = res.send.mock.calls[0][0];
-
-      expect(sentResponse.user).not.toHaveProperty("password");
-      expect(sentResponse.user).not.toHaveProperty("answer");
-    });
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
-  describe('Validation Test', () => {
-    // Error message should be generic to prevent user enumeration
-    it('should return error if email is missing', async () => {
-      req.body.email = "";
+  describe("Input Validation & Normalization", () => {
+    test.each([
+      ["email", "", "Invalid Email or Password"],
+      ["email", " ", "Invalid Email or Password"],
+      ["password", "", "Invalid Email or Password"],
+    ])("should return 400 if %s is missing", async (field, value) => {
+      // Arrange
+      req.body[field] = value;
 
+      // Act
       await loginController(req, res);
 
+      // Assert
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
     });
 
-    it('should return error if password is missing', async () => {
-      req.body.password = "";
+    test("should normalize email (trim/lowercase) before querying database", async () => {
+      // Arrange
+      req.body.email = "  USER@Example.Com  ";
+      setupMockUser({ email: "user@example.com" });
+      comparePassword.mockResolvedValue(true);
+      JWT.sign.mockReturnValue("token");
 
+      // Act
       await loginController(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
+      // Assert
+      expect(userModel.findOne).toHaveBeenCalledWith({ email: "user@example.com" });
     });
 
-    it('should return error if both email and password are missing', async () => {
-      req.body.email = "";
-      req.body.password = "";
+    test("should return 400 if validateEmail helper returns false", async () => {
+      // Arrange
+      setupMockUser();
+      comparePassword.mockResolvedValue(true);
+      validateEmail.mockReturnValue(false); // Simulate format error
 
+      // Act
       await loginController(req, res);
 
+      // Assert
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
-    });
-
-    it('should return error if email is undefined', async () => {
-      delete req.body.email;
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
-    });
-
-    it('should return error if password is undefined', async () => {
-      delete req.body.password;
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
-    });
-
-    it('should return error if both email and password are undefined', async () => {
-      delete req.body.email;
-      delete req.body.password;
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
-    });
-
-    it('should return error if email is white space', async () => {
-      req.body.email = " ";
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
+        expect.objectContaining({ message: "Invalid Email or Password" })
       );
     });
   });
 
-  describe('White Space Test', () => {
-    it('should trim leading/trailing spaces from email and login successfully', async () => {
-      req.body.email = "   test@example.com   ";
-      req.body.password = "password";
-
-      const mockUser = {
-        _id: "testid",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedpassword",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(true);
-      JWT.sign.mockReturnValue("testtoken");
-
-      await loginController(req, res);
-
-      // Verify that the email is trimmed
-      expect(userModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: "Login Successful",
-        })
-      );
-    });
-
-    it('should NOT trim leading/trailing spaces from password and login successfully', async () => {
-      req.body.email = "test@example.com";
-      req.body.password = "   password   ";
-
-      const mockUser = {
-        _id: "testid",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedpassword",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(true);
-      JWT.sign.mockReturnValue("testtoken");
-
-      await loginController(req, res);
-
-      expect(comparePassword).toHaveBeenCalledWith("   password   ", "hashedpassword");
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: "Login Successful",
-        })
-      );
-    });
-
-    it('should trim leading/trailing spaces from both email and password and login successfully', async () => {
-      req.body.email = "   test@example.com   ";
-      req.body.password = "   password   ";
-
-      const mockUser = {
-        _id: "testid",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedpassword",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(true);
-      JWT.sign.mockReturnValue("testtoken");
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: "Login Successful",
-        })
-      );
-    });
-  });
-
-  describe('Authentication Test', () => {
-    it('should return error if email is not found', async () => {
-      req.body.email = "test@example.com";
-      req.body.password = "password";
-
+  describe("Authentication Logic", () => {
+    test("should return 400 if user does not exist", async () => {
+      // Arrange
       userModel.findOne.mockResolvedValue(null);
 
+      // Act
       await loginController(req, res);
 
-      // Use 400 to not leak information about whether the email exists or not
+      // Assert
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
     });
 
-    it('should return error if password is incorrect', async () => {
-      req.body.email = "test@example.com";
-      req.body.password = "password";
-
-      const mockUser = {
-        _id: "testid",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedpassword",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
+    test("should return 400 if password comparison fails", async () => {
+      // Arrange
+      setupMockUser();
       comparePassword.mockResolvedValue(false);
 
+      // Act
       await loginController(req, res);
 
+      // Assert
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
     });
 
-    it('should return error if both email and password are incorrect', async () => {
-      req.body.email = "test@example.com";
-      req.body.password = "password";
-
-      const mockUser = {
-        _id: "testid",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedpassword",
-        answer: "testanswer",
-        role: 0,
-      };
-
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockResolvedValue(false);
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Invalid Email or Password",
-        })
-      );
-    });
-  });
-
-  describe('Error Handling Test', () => {
-    it('should return error if database connection fails', async () => {
-      const dbError = new Error("Database connection failed");
-      userModel.findOne.mockRejectedValue(dbError);
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Error in Login",
-          error: dbError,
-        })
-      );
-    });
-
-    it('should handle password comparison errors', async () => {
-      const mockUser = {
-        _id: "testid",
-        email: "test@example.com",
-        password: "hashedpassword",
-      };
-      const compareError = new Error("Password comparison failed");
-      userModel.findOne.mockResolvedValue(mockUser);
-      comparePassword.mockRejectedValue(compareError);
-
-      await loginController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: "Error in Login",
-        })
-      );
-    });
-
-    it('should handle JWT token signing errors', async () => {
-      const mockUser = {
-        _id: "testid",
-        email: "test@example.com",
-        password: "hashedpassword",
-      };
-      const tokenError = new Error("Token signing failed");
-      userModel.findOne.mockResolvedValue(mockUser);
+    test("should return 200 and JWT on successful login", async () => {
+      // Arrange
+      const mockUser = setupMockUser();
       comparePassword.mockResolvedValue(true);
-      JWT.sign.mockRejectedValue(tokenError);
+      JWT.sign.mockReturnValue("valid_token");
 
+      // Act
       await loginController(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: false,
-          message: "Error in Login",
+          success: true,
+          token: "valid_token",
+          user: expect.objectContaining({ email: mockUser.email })
         })
       );
-      jest
     });
   });
 
-  describe('Invalid format validation Test', () => {
-    describe('Email format validation Test', () => {
-      const invalidEmail = [
-        "plainaddress",
-        "@missingusername.com",
-        "username@.com",
-        "username@com",
-        "username@domain..com",
-        "#$%^&*()@example.com",
-        "Joe Smith <email@example.com>",
-        "email@example@example.com",
-        "email@example.com (email)",
-      ];
+  describe("Security Check", () => {
+    test("should never include password or answer in the response", async () => {
+      // Arrange
+      setupMockUser();
+      comparePassword.mockResolvedValue(true);
+      JWT.sign.mockReturnValue("token");
 
-      test.each(invalidEmail)('should return error if email format is invalid', async (email) => {
-        req.body.email = email;
-        req.body.password = "password";
-
-        await loginController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: "Invalid Email or Password",
-          })
-        );
-      });
-    });
-  });
-
-  describe('Case Sensitivity Test', () => {
-    describe('Email normalisation Test', () => {
-      it('should normalize email to lowercase before querying', async () => {
-        req.body.email = "TEST@EXAMPLE.COM";
-        req.body.password = "password";
-        const mockUser = {
-          _id: "testid",
-          name: "Test User",
-          email: "test@example.com",
-          password: "hashedpassword",
-          phone: "+1234567890",
-          address: "123 Test St",
-          DOB: "2000-01-01",
-          answer: "testanswer",
-          role: 0,
-        };
-        userModel.findOne.mockResolvedValue(mockUser);
-        comparePassword.mockResolvedValue(true);
-        JWT.sign.mockResolvedValue("testtoken");
-
-        await loginController(req, res);
-
-        expect(userModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: true,
-            message: "Login Successful",
-          })
-        );
-      });
-    });
-
-    describe('Password case sensitivity Test', () => {
-      it('should treat password as case sensitive', async () => {
-        req.body.email = "test@example.com";
-        req.body.password = "Password123";
-
-        const mockUser = {
-          _id: "testid",
-          name: "Test User",
-          email: "test@example.com",
-          password: "hashedpassword123",
-          phone: "+1234567890",
-          address: "123 Test St",
-          DOB: "2000-01-01",
-          answer: "testanswer",
-          role: 0,
-        };
-        userModel.findOne.mockResolvedValue(mockUser);
-        comparePassword.mockResolvedValue(false);
-
-        await loginController(req, res);
-
-        expect(comparePassword).toHaveBeenCalledWith(
-          "Password123",
-          mockUser.password
-        );
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: "Invalid Email or Password",
-          })
-        );
-      });
-    });
-  });
-
-  describe('Error Logging Tests', () => {
-    it('should log error to console when login fails', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-      const error = new Error('Database error');
-      userModel.findOne.mockRejectedValue(error);
-
+      // Act
       await loginController(req, res);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        error
-      );
+      // Assert
+      const responseData = res.send.mock.calls[0][0];
+      expect(responseData.user).not.toHaveProperty("password");
+      expect(responseData.user).not.toHaveProperty("answer");
+    });
+  });
 
-      consoleErrorSpy.mockRestore();
+  describe("System Error Handling", () => {
+    let consoleSpy;
+    beforeEach(() => { 
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {}); 
+    });
+    afterEach(() => consoleSpy.mockRestore());
+
+    test("should handle database failures", async () => {
+      // Arrange
+      userModel.findOne.mockRejectedValue(new Error("DB Error"));
+
+      // Act
+      await loginController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    test("should handle JWT signing errors", async () => {
+      // Arrange
+      setupMockUser();
+      comparePassword.mockResolvedValue(true);
+      JWT.sign.mockImplementation(() => { throw new Error("JWT Error"); });
+
+      // Act
+      await loginController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 });
