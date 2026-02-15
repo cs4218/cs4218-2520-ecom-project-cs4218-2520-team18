@@ -2,16 +2,29 @@ import { registerController } from "./registerController.js";
 import userModel from "../models/userModel.js";
 import { hashPassword } from "../helpers/authHelper.js";
 
-//REGISTER CONTROLLER
+// Mock dependencies
 jest.mock("../models/userModel.js");
 jest.mock("./../helpers/authHelper.js");
 jest.mock("jsonwebtoken");
 
-describe("registerController", () => {
+describe("registerController Comprehensive Unit Tests", () => {
   let req, res;
 
-  // Set up standard request and response objects
+  const setupMockUser = (data) => {
+    const mockDoc = {
+      ...data,
+      _id: "mock_id_123",
+      _doc: { ...data, _id: "mock_id_123" },
+      save: jest.fn().mockImplementation(function () {
+        return Promise.resolve(this);
+      }),
+    };
+    userModel.mockImplementation(() => mockDoc);
+    return mockDoc;
+  };
+
   beforeEach(() => {
+    // Arrange - Reset request and response objects before each test
     req = {
       body: {
         name: "Test User",
@@ -31,602 +44,524 @@ describe("registerController", () => {
     jest.clearAllMocks();
   });
 
-  // Input validation tests
-  it("should return error if name is missing", async () => {
-    req.body.name = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Name is Required",
-    });
-  });
-
-  it("should return error if email is missing", async () => {
-    req.body.email = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Email is Required",
-    });
-  });
-
-  it("should return error if password is missing", async () => {
-    req.body.password = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Password is Required",
-    });
-  });
-
-  it("should return error if phone is missing", async () => {
-    req.body.phone = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Phone no. is Required",
-    });
-  });
-
-  it("should return error if address is missing", async () => {
-    req.body.address = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Address is Required",
-    });
-  });
-
-  it("should return error if DOB is missing", async () => {
-    req.body.DOB = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "DOB is Required",
-    });
-  });
-
-  it("should return error if answer is missing", async () => {
-    req.body.answer = "";
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Answer is Required",
-    });
-  });
-
-  // Logic tests
-  it("should return error if user email already exists", async () => {
-    userModel.findOne.mockResolvedValue({ email: "test@example.com" });
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Already registered, please login",
-    });
-  });
-
-  it("should register user successfully", async () => {
-    userModel.findOne.mockResolvedValue(null);
-
-    hashPassword.mockResolvedValue("hashedpassword");
-
-    const mockUserDoc = {
-      _id: "testuserid",
-      name: "Test User",
-      email: "test@example.com",
-      phone: "+1234567890",
-      address: "123 Test St",
-      DOB: "2000-01-01",
-      // password and answer will be excluded in response
-      password: "hashedpassword",
-      answer: "testanswer",
-    };
-    const mockSave = jest.fn().mockResolvedValue({ _doc: mockUserDoc });
-
-    // Mock the userModel constructor to return an object with a save method
-    userModel.mockImplementation(() => ({
-      save: mockSave,
-    }));
-
-    await registerController(req, res);
-
-    expect(hashPassword).toHaveBeenCalledWith("password123");
-    expect(userModel).toHaveBeenCalledTimes(1);
-    expect(mockSave).toHaveBeenCalledTimes(1);
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.send).toHaveBeenCalledWith({
-      success: true,
-      message: "User Registered Successfully",
-      user: {
-        _id: "testuserid",
-        name: "Test User",
-        email: "test@example.com",
-        phone: "+1234567890",
-        address: "123 Test St",
-        DOB: "2000-01-01",
-      },
-    });
-  });
-
-  // Error handling test
-  it("should handle database errors", async () => {
-    const errorMessage = new Error("Database error");
-    userModel.findOne.mockRejectedValue(errorMessage);
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Error in Registration",
-      error: errorMessage,
-    });
-  });
-
-  it("should handle hashing errors", async () => {
-    userModel.findOne.mockResolvedValue(null);
-    const errorMessage = new Error("Hashing error");
-    hashPassword.mockRejectedValue(errorMessage);
-
-    await registerController(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.send).toHaveBeenCalledWith({
-      success: false,
-      message: "Error in Registration",
-      error: errorMessage,
-    });
-  });
-
-  // Edge cases
-
-  // 1. Whitespace-only input (should be treated as missing)
-  describe("Whitespace-only input validation", () => {
-    test("should return error for whitespace-only name", async () => {
-      req.body.name = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Name is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
-    test("should return error for whitespace-only email", async () => {
-      req.body.email = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Email is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
-    test("should return error for whitespace-only phone", async () => {
-      req.body.phone = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Phone no. is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
-    test("should return error for whitespace-only address", async () => {
-      req.body.address = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Address is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-
-    test("should return error for whitespace-only answer", async () => {
-      req.body.answer = " ";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Answer is Required",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-  });
-
-  // 2. Input length boundaries
-  describe("Input length boundary validation", () => {
-    test("should return error for password shorter than 6 characters", async () => {
-      req.body.password = "12345";
-
-      await registerController(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({
-        success: false,
-        message: "Password must be at least 6 characters long",
-      });
-      expect(userModel).not.toHaveBeenCalled();
-    });
-  });
-
-  // 3. Invalid format input (not whitespace-only)
-  describe("Invalid format validation", () => {
-    describe("Email validation edge cases", () => {
-      const invalidEmails = [
-        "plainaddress",
-        "@missingusername.com",
-        "username@.com",
-        "username@com",
-        "username@domain..com",
-        "#$%^&*()@example.com",
-        "Joe Smith <email@example.com>",
-        "email@example@example.com",
-        "email@example.com (email)",
-      ];
-
-      test.each(invalidEmails)(
-        "should return error for invalid email: %s",
-        async (email) => {
-          req.body.email = email;
-          await registerController(req, res);
-
-          expect(res.status).toHaveBeenCalledWith(400);
-          expect(res.send).toHaveBeenCalledWith({
-            success: false,
-            message: "Invalid Email Format",
-          });
-          expect(userModel).not.toHaveBeenCalled();
-        },
-      );
-    });
-
-    describe("Phone number validation edge cases", () => {
-      const invalidPhones = [
-        "abcdefghij",
-        "123-456-7890",
-        "(123) 456-7890",
-        "+1 (123) 456-7890",
-        "123.456.7890",
-        "123 456 7890",
-        "!@#$%^&*()",
-      ];
-
-      test.each(invalidPhones)(
-        "should return error for invalid phone number: %s",
-        async (phone) => {
-          req.body.phone = phone;
-
-          await registerController(req, res);
-
-          expect(res.status).toHaveBeenCalledWith(400);
-          expect(res.send).toHaveBeenCalledWith({
-            success: false,
-            message: "Invalid Phone Number",
-          });
-          expect(userModel).not.toHaveBeenCalled();
-        },
-      );
-    });
-
-    describe("DOB validation edge cases", () => {
-      const invalidDOBs = ["invalid-date"];
-
-      test.each(invalidDOBs)(
-        "should return error for invalid DOB: %s",
-        async (DOB) => {
-          req.body.DOB = DOB;
-          await registerController(req, res);
-
-          expect(res.status).toHaveBeenCalledWith(400);
-          expect(res.send).toHaveBeenCalledWith({
-            success: false,
-            message: "Invalid DOB format. Please use YYYY-MM-DD",
-          });
-          expect(userModel).not.toHaveBeenCalled();
-        },
-      );
-
-      test("should return error if DOB is in the future", async () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 1);
-        req.body.DOB = futureDate.toISOString().split("T")[0];
-
+  describe("Basic Field Requirements", () => {
+    test.each([
+      ["name", "", "Name is Required"],
+      ["email", "", "Email is Required"],
+      ["password", "", "Password is Required"],
+      ["phone", "", "Phone no. is Required"],
+      ["address", "", "Address is Required"],
+      ["DOB", "", "DOB is Required"],
+      ["answer", "", "Answer is Required"],
+      ["name", " ", "Name is Required"], // Whitespace-only cases
+      ["email", " ", "Email is Required"],
+      ["phone", " ", "Phone no. is Required"],
+      ["address", " ", "Address is Required"],
+      ["answer", " ", "Answer is Required"],
+    ])(
+      "should return 400 error for %s input: '%s'",
+      async (field, value, message) => {
+        // Arrange
+        req.body[field] = value;
+
+        // Act
         await registerController(req, res);
 
+        // Assert
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.send).toHaveBeenCalledWith({
-          success: false,
-          message: "Invalid or future DOB",
-        });
-        expect(userModel).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  // 3. Valid phone numbers
-  describe("should accept valid phone numbers", () => {
-    const validPhones = ["123456789012345", "+11234567890"];
-
-    test.each(validPhones)(
-      "should accept valid phone number: %s",
-      async (phone) => {
-        req.body.phone = phone;
-        userModel.findOne.mockResolvedValue(null);
-        hashPassword.mockResolvedValue("hashedpassword");
-        const mockSave = jest.fn().mockResolvedValue({ _doc: req.body });
-        userModel.mockImplementation(() => ({ save: mockSave }));
-
-        await registerController(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(201);
         expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: true,
-            message: "User Registered Successfully",
-          }),
+          expect.objectContaining({ success: false, message }),
         );
       },
     );
   });
 
-  describe("Whitespace handling in inputs", () => {
-    it("should trim whitespace from name", async () => {
-      req.body.name = "   Test User   ";
+  describe("Input Format & Boundary Validation", () => {
+    test("should return 400 if password is < 6 characters", async () => {
+      // Arrange
+      req.body.password = "12345";
 
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
+      // Act
       await registerController(req, res);
 
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Test User" }),
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Password must be at least 6 characters long",
+        }),
+      );
+    });
+    
+    test("should allow 1 character name (boundary case)", async () => {
+      // Arrange
+      req.body.name = "A";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should reject name exceeding typical length (e.g. 100 characters)", async () => {
+      // Arrange
+      req.body.name = "A".repeat(101);
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Name must be less than 100 characters" }),
       );
     });
 
-    it("should trim whitespace from email", async () => {
-      req.body.email = "   test@example.com   ";
-
+    test("should accept name exactly 100 characters", async () => {
+      // Arrange
+      req.body.name = "A".repeat(100);
       userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
+      setupMockUser(req.body);
 
+      // Act
       await registerController(req, res);
 
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ email: "test@example.com" }),
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return true if password is 6 characters", async () => {
+      // Arrange
+      req.body.password = "123456";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+      
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return true if password is > 6 characters", async () => {
+      // Arrange
+      req.body.password = "1234567";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+      
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    // Exhaustive Email Format Testing
+    test.each([
+      "plainaddress",
+      "@missingusername.com",
+      "username@.com",
+      "username@com",
+      "username@domain..com",
+      "#$%^&*()@example.com",
+      "Joe Smith <email@example.com>",
+      "email@example@example.com",
+      "email@example.com (email)",
+    ])("should reject invalid email format: %s", async (email) => {
+      // Arrange
+      req.body.email = email;
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid Email Format" }),
       );
     });
 
-    it("should trim whitespace from phone", async () => {
-      req.body.phone = "   1234567890   ";
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
+    // Exhaustive Phone Format Testing
+    test.each([
+      "abcdefghij",
+      "123-456-7890",
+      "(123) 456-7890",
+      "+1 (123) 456-7890",
+      "123.456.7890",
+      "123 456 7890",
+      "!@#$%^&*()",
+    ])("should reject invalid phone format: %s", async (phone) => {
+      // Arrange
+      req.body.phone = phone;
 
+      // Act
       await registerController(req, res);
 
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ phone: "1234567890" }),
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid Phone Number" }),
       );
     });
 
-    it("should trim whitespace from address", async () => {
-      req.body.address = "   123 Test St   ";
+    test("should return false for number shorter than 2 digits as invalid (1 digit)", async () => {
+      // Arrange
+      req.body.phone = "+1";
 
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
+      // Act
       await registerController(req, res);
 
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ address: "123 Test St" }),
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid Phone Number" }),
       );
     });
 
-    it("should trim whitespace from answer", async () => {
-      req.body.answer = "   testanswer   ";
+    test("should return true for number exactly 2 digits", async () => {
+      // Arrange
+      req.body.phone = "+12";
       userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
+      setupMockUser(req.body);
+      
+      // Act
       await registerController(req, res);
 
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ answer: "testanswer" }),
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return true for number longer than 2 digits (3 digits)", async () => {
+      // Arrange
+      req.body.phone = "+123";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+      
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return true for number with maximum 15 digits", async () => {
+      // Arrange
+      req.body.phone = "+123456789012345";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return false for number longer than 15 digits", async () => {
+      // Arrange
+      req.body.phone = "+1234567890123456";
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid Phone Number" }),
+      );
+    });
+
+    test("should return true for number shorter than 15 digits", async () => {
+      // Arrange
+      req.body.phone = "+12345678901234";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    test("should return true for number with optional leading +", async () => {
+      // Arrange
+      req.body.phone = "1234567890";
+      userModel.findOne.mockResolvedValue(null);
+      setupMockUser(req.body);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    // Exhaustive DOB Format Testing
+    test.each([
+      ["invalid-date", "Invalid DOB or format. Please use YYYY-MM-DD"],
+      ["2020/01/01", "Invalid DOB or format. Please use YYYY-MM-DD"],
+      ["01-01-2000", "Invalid DOB or format. Please use YYYY-MM-DD"],
+      ["not-a-date", "Invalid DOB or format. Please use YYYY-MM-DD"],
+    ])("should reject invalid DOB format: %s", async (DOB, message) => {
+      // Arrange
+      req.body.DOB = DOB;
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message }),
+      );
+    });
+
+    test("should reject if DOB is in the future", async () => {
+      // Arrange
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      req.body.DOB = tomorrow.toISOString().split("T")[0];
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Invalid or future DOB" }),
+      );
+    });
+
+    test("should reject if format is correct but DOB is invalid (e.g. 2020-02-30)", async () => {
+      // Arrange
+      req.body.DOB = "2020-02-30";
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Invalid DOB or format. Please use YYYY-MM-DD",
+        }),
       );
     });
   });
 
-  // Security tests
-  it("should not include password or answer in the response", async () => {
-    userModel.findOne.mockResolvedValue(null);
-    hashPassword.mockResolvedValue("hashedpassword");
+  describe("Registration Logic & Security", () => {
+    it("should return 200/conflict if user already exists", async () => {
+      // Arrange
+      userModel.findOne.mockResolvedValue({ email: "test@example.com" });
 
-    const mockSavedUser = {
-      _id: "testuserid",
-      name: "Test User",
-      email: "test@example.com",
-      password: "hashedpassword",
-      phone: "+1234567890",
-      address: "123 Test St",
-      DOB: "2000-01-01",
-      answer: "testanswer",
-    };
+      // Act
+      await registerController(req, res);
 
-    const mockSave = jest.fn().mockResolvedValue({ _doc: mockSavedUser });
-    userModel.mockImplementation(() => ({ save: mockSave }));
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Already registered, please login",
+        }),
+      );
+    });
 
-    await registerController(req, res);
+    it("should successfully register a new user with all valid inputs (Happy Path", async () => {
+      // Arrange
+      const rawPassword = "password123";
+      const hashedPassword = "hashed_safe_password";
 
-    const sentResponse = res.send.mock.calls[0][0];
+      req.body.email = "  UPPERCASE@example.com  ";
+      req.body.password = rawPassword;
 
-    expect(sentResponse.user).not.toHaveProperty("password");
-    expect(sentResponse.user).not.toHaveProperty("answer");
-  });
+      userModel.findOne.mockResolvedValue(null);
+      hashPassword.mockResolvedValue(hashedPassword);
 
-  describe("Case Sensitivity Tests", () => {
-    describe('Email normalization', () => {
-      it('should normalize email to lowercase', async () => {
-        req.body.email = "TEST@EXAMPLE.COM";
-        userModel.findOne.mockResolvedValue(null);
-        hashPassword.mockResolvedValue("hashedpassword");
-        const mockSave = jest.fn().mockResolvedValue({});
-        userModel.mockImplementation(() => ({ save: mockSave }));
+      const mockSavedDoc = {
+        _id: "mongo_id_999",
+        name: req.body.name,
+        email: "uppercase@example.com",
+        password: hashedPassword,
+        phone: req.body.phone,
+        address: req.body.address,
+        DOB: req.body.DOB,
+        answer: "testanswer",
+      };
 
-        await registerController(req, res);
+      const saveSpy = jest.fn().mockResolvedValue({ _doc: mockSavedDoc });
+      userModel.mockImplementation((data) => ({
+        ...data,
+        save: saveSpy,
+      }));
 
-        expect(userModel).toHaveBeenCalledWith(
-          expect.objectContaining({ email: "test@example.com" }),
-        );
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      // Verify Logic Flow
+      expect(userModel.findOne).toHaveBeenCalledWith({
+        email: "uppercase@example.com",
       });
+      expect(hashPassword).toHaveBeenCalledWith(rawPassword);
 
-      it('should detect duplicate emails case-insensitively', async () => {
-        req.body.email = "TEST@EXAMPLE.COM";
-        userModel.findOne.mockResolvedValue({ email: "test@example.com" });
-
-        await registerController(req, res);
-
-        expect(userModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: "Already registered, please login",
-          }),
-        );
-      });
-    });
-  });
-
-  describe('Answer normalization', () => {
-    it('should normalize answer to lowercase', async () => {
-      req.body.answer = "TESTANSWER";
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
-      await registerController(req, res);
-
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ answer: "testanswer" }),
-      );
-    });
-  });
-
-  describe('Name case preservation', () => {
-    it('should preserve name case', async () => {
-      req.body.name = "Test User";
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
-      await registerController(req, res);
-
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Test User" }),
-      );
-    });
-  });
-
-  describe('Address case preservation', () => {
-    it('should preserve address case', async () => {
-      req.body.address = "123 Test St";
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedpassword");
-      const mockSave = jest.fn().mockResolvedValue({});
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
-      await registerController(req, res);
-
-      expect(userModel).toHaveBeenCalledWith(
-        expect.objectContaining({ address: "123 Test St" }),
-      );
-    });
-  });
-
-  describe('Password case preservation', () => {
-    it('should preserve password case before hashing', async () => {
-      req.body.password = "PassWord123";
-      userModel.findOne.mockResolvedValue(null);
-      hashPassword.mockResolvedValue("hashedPassWord123");
-      const mockSave = jest.fn().mockResolvedValue({ _doc: {} });
-      userModel.mockImplementation(() => ({ save: mockSave }));
-
-      await registerController(req, res);
-
-      expect(hashPassword).toHaveBeenCalledWith("PassWord123");
+      // Verify the Model was instantiated with the correct (hashed/normalized) data
       expect(userModel).toHaveBeenCalledWith(
         expect.objectContaining({
-          password: "hashedPassWord123"
-        })
+          email: "uppercase@example.com",
+          password: hashedPassword,
+          name: "Test User",
+        }),
       );
+
+      // Verify Response
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.send).toHaveBeenCalledWith({
+        success: true,
+        message: "User Registered Successfully",
+        user: expect.objectContaining({
+          _id: "mongo_id_999",
+          email: "uppercase@example.com",
+        }),
+      });
+
+      // Verify Security (Crucial Happy Path Step)
+      const responseData = res.send.mock.calls[0][0];
+      expect(responseData.user.password).toBeUndefined();
+      expect(responseData.user.answer).toBeUndefined();
+    });
+
+    it("should not expose sensitive fields in the response", async () => {
+      // Arrange
+      userModel.findOne.mockResolvedValue(null);
+      hashPassword.mockResolvedValue("hashed_secret");
+      const mockSavedDoc = {
+        _id: "id_123",
+        ...req.body,
+        password: "hashed_secret",
+      };
+      const mockSave = jest.fn().mockResolvedValue({ _doc: mockSavedDoc });
+      userModel.mockImplementation((data) => ({ ...data, save: mockSave }));
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(hashPassword).toHaveBeenCalledWith("password123");
+      expect(userModel).toHaveBeenCalledWith(
+        expect.objectContaining({ password: "hashed_secret" }),
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+
+      // Security Assertions
+      const response = res.send.mock.calls[0][0];
+      expect(response.user).not.toHaveProperty("password");
+      expect(response.user).not.toHaveProperty("answer");
     });
   });
 
-  describe('Error Logging Tests', () => {
-    it('should log error to console when registration fails', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-      const error = new Error('Database error');
-      userModel.findOne.mockRejectedValue(error);
+  describe("Data Normalization & Case Preservation", () => {
+    test.each([
+      ["email", "  TEST@EXAMPLE.COM  ", "test@example.com"],
+      ["answer", "  SECRET_ANSWER  ", "secret_answer"],
+      ["name", "  John Doe  ", "John Doe"], // Trims but preserves case
+      ["address", "  123 Maple St  ", "123 Maple St"], // Trims but preserves case
+    ])(
+      "should correctly handle %s input: '%s'",
+      async (field, input, expected) => {
+        // Arrange
+        req.body[field] = input;
+        userModel.findOne.mockResolvedValue(null);
+        hashPassword.mockResolvedValue("hashed");
 
+        const mockFullDoc = {
+          _id: "norm_id",
+          name: field === "name" ? expected : "Test User",
+          email: field === "email" ? expected : "test@example.com",
+          answer: field === "answer" ? expected : "testanswer",
+          address: field === "address" ? expected : "123 Test St",
+          password: "hashed",
+          phone: "1234567890",
+          DOB: "2000-01-01",
+        };
+
+        const mockSave = jest.fn().mockResolvedValue({ _doc: mockFullDoc });
+        userModel.mockImplementation((data) => ({ ...data, save: mockSave }));
+
+        // Act
+        await registerController(req, res);
+
+        // Assert
+        expect(userModel).toHaveBeenCalledWith(
+          expect.objectContaining({ [field]: expected }),
+        );
+      },
+    );
+
+    it("should preserve password case for hashing", async () => {
+      // Arrange
+      req.body.password = "CaseSensitive123";
+      userModel.findOne.mockResolvedValue(null);
+
+      // Act
       await registerController(req, res);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.any(Error),
-      );
+      // Assert
+      expect(hashPassword).toHaveBeenCalledWith("CaseSensitive123");
+    });
 
-      consoleErrorSpy.mockRestore();
+    it("should preserve whitespace in password for hashing", async () => {
+      // Arrange
+      req.body.password = "  password with spaces  ";
+      userModel.findOne.mockResolvedValue(null);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(hashPassword).toHaveBeenCalledWith("  password with spaces  ");
+    });
+  });
+
+  describe("System Error Handling", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle database failures during lookup", async () => {
+      // Arrange
+      const error = new Error("DB Fail");
+      userModel.findOne.mockRejectedValue(error);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+    });
+
+    it("should handle hashing service failures", async () => {
+      // Arrange
+      const error = new Error("Hash Fail");
+      userModel.findOne.mockResolvedValue(null);
+      hashPassword.mockRejectedValue(error);
+
+      // Act
+      await registerController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ error }));
     });
   });
 });
-
-

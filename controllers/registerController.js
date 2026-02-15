@@ -60,9 +60,16 @@ export const registerController = async (req, res) => {
       });
     }
 
+    if (name && name.length > 100) {
+      return res.status(400).send({
+        success: false,
+        message: "Name must be less than 100 characters",
+      });
+    }
+
     // DOB format validation (YYYY-MM-DD)
     if (!validateDOB(DOB)) {
-      return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
+      return res.status(400).send({ success: false, message: "Invalid DOB or format. Please use YYYY-MM-DD" });
     }
     // Check if DOB is a valid date and not in the future
     if (!validateDOBNotFuture(DOB)) {
