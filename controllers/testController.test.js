@@ -1,49 +1,61 @@
 import { testController } from "./testController.js";
 
-jest.mock("../models/userModel.js");
-jest.mock("./../helpers/authHelper.js");
-jest.mock("jsonwebtoken");
-
-describe('testController', () => {
+describe("testController Unit Tests", () => {
   let req, res;
 
   beforeEach(() => {
+    // Arrange - Setup common request and response objects
     req = {};
     res = {
-      send: jest.fn(),
       status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
     };
+
     jest.clearAllMocks();
   });
 
-  it('should return "Protected Routes" message', () => {
-    testController(req, res);
+  describe("Access Validation", () => {
+    test("should return 200 and success message when accessed", () => {
+      // Act
+      testController(req, res);
 
-    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
-      success: true,
-      message: "Protected route accessed successfully",
-    }));
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          message: "Protected route accessed successfully",
+        })
+      );
+    });
   });
 
-  it('should handle errors gracefully', () => {
-    const error = new Error('Unexpected error');
-    res.send.mockImplementationOnce(() => {
-      throw error;
+  describe("System Error Handling", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
     });
 
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+    test("should handle unexpected failures during execution", () => {
 
-    testController(req, res);
+      res.status.mockImplementationOnce(() => {
+        throw new Error("Unexpected internal error");
+      });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: false,
-        message: "Error in Test",
-      })
-    );
+      // Act
+      testController(req, res);
 
-    consoleErrorSpy.mockRestore();
+      // Assert
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: "Error in Test",
+        })
+      );
+    });
   });
 });
