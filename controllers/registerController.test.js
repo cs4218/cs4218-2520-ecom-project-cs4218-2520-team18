@@ -336,7 +336,7 @@ describe("registerController Comprehensive Unit Tests", () => {
 
     test("should handle database failures during lookup gracefully", async () => {
       // Arrange
-      const error = new Error("DB Fail");
+      const error = new Error("DB Error");
       userModel.findOne.mockRejectedValue(error);
 
       // Act
