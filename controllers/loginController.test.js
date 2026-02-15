@@ -179,6 +179,7 @@ describe("loginController Comprehensive Unit Tests", () => {
 
       // Assert
       expect(res.status).toHaveBeenCalledWith(500);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
 
     test("should handle JWT signing errors", async () => {
@@ -192,6 +193,7 @@ describe("loginController Comprehensive Unit Tests", () => {
 
       // Assert
       expect(res.status).toHaveBeenCalledWith(500);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });
