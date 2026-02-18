@@ -20,11 +20,11 @@ const AuthProvider = ({ children }) => {
     if (data) {
       try {
         const parseData = JSON.parse(data);
-        setAuth({
-          ...auth,
+        setAuth((prev) => ({
+          ...prev,
           user: parseData.user,
           token: parseData.token,
-        });
+        }));
       } catch (error) {
         console.error("Error parsing auth data from localStorage:", error);
       }
