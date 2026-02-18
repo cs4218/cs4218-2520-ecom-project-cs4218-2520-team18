@@ -43,6 +43,15 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
   });
 
   describe("Environment Configuration Tests (Edge Cases)", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
     test("should return 401 if JWT_SECRET is missing", async () => {
       // Arrange
       const token = "valid-token";
@@ -58,6 +67,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
       // Assert
       expect(res.status).toHaveBeenCalledWith(401);
       expect(next).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
