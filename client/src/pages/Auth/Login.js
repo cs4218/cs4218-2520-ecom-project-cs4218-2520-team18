@@ -44,8 +44,8 @@ const Login = () => {
         toast.error(res.data.message);
       }
     } catch (error) {
-      console.log(error);
-      toast.error("Something went wrong");
+      console.error(error);
+      toast.error(error?.response?.data?.message || error?.message || "Something went wrong");
     }
   };
   return (

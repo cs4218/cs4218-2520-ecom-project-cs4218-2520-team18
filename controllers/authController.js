@@ -1,8 +1,9 @@
 import userModel from "../models/userModel.js";
-import orderModel from "../models/orderModel.js";
+
 
 import { comparePassword, hashPassword } from "./../helpers/authHelper.js";
 import JWT from "jsonwebtoken";
+import { validateEmail, validatePhoneE164, validatePassword, validateDOB, validateDOBNotFuture } from "../helpers/validationHelper.js";
 
 export const registerController = async (req, res) => {
   try {
@@ -11,7 +12,6 @@ export const registerController = async (req, res) => {
     // trim inputs
     name = name?.trim();
     email = email?.trim();
-    password = password?.trim();
     phone = phone?.trim();
     address = address?.trim();
     DOB = DOB?.trim();
@@ -46,17 +46,15 @@ export const registerController = async (req, res) => {
 
     // Email format validation
     // RFC 5322 Official Standard Email Regex
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: "Invalid Email Format" });
     }
 
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
-    if (!phoneRegex.test(phone)) {
+    if (!validatePhoneE164(phone)) {
       return res.status(400).send({ success: false, message: "Invalid Phone Number" });
     }
 
-    if (password.length < 6) {
+    if (!validatePassword(password)) {
       return res.status(400).send({
         success: false,
         message: "Password must be at least 6 characters long",
@@ -64,18 +62,13 @@ export const registerController = async (req, res) => {
     }
 
     // DOB format validation (YYYY-MM-DD)
-    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dobRegex.test(DOB)) {
+    if (!validateDOB(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid DOB format. Please use YYYY-MM-DD" });
     }
     // Check if DOB is a valid date and not in the future
-    const dobDate = new Date(DOB);
-    const now = new Date();
-    if (isNaN(dobDate.getTime()) || dobDate > now) {
+    if (!validateDOBNotFuture(DOB)) {
       return res.status(400).send({ success: false, message: "Invalid or future DOB" });
     }
-
-
 
     //check user
     const exisitingUser = await userModel.findOne({ email });
@@ -123,7 +116,6 @@ export const loginController = async (req, res) => {
 
     // trim inputs
     email = email?.trim();
-    password = password?.trim();
 
     const invalidError = "Invalid Email or Password";
     //validation
@@ -152,8 +144,7 @@ export const loginController = async (req, res) => {
       });
     }
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: invalidError });
     }
 
@@ -194,7 +185,6 @@ export const forgotPasswordController = async (req, res) => {
     // trim inputs
     email = email?.trim();
     answer = answer?.trim();
-    newPassword = newPassword?.trim();
 
     // validation
     if (!email) {
@@ -211,12 +201,11 @@ export const forgotPasswordController = async (req, res) => {
     email = email.toLowerCase();
     answer = answer.toLowerCase();
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       return res.status(400).send({ success: false, message: "Invalid Email or Answer" });
     }
 
-    if (newPassword.length < 6) {
+    if (!validatePassword(newPassword)) {
       return res.status(400).send({
         success: false,
         message: "New password must be at least 6 characters long",
@@ -265,94 +254,3 @@ export const testController = (req, res) => {
   }
 };
 
-//update prfole
-export const updateProfileController = async (req, res) => {
-  try {
-    const { name, email, password, address, phone } = req.body;
-    const user = await userModel.findById(req.user._id);
-    //password
-    if (password && password.length < 6) {
-      return res.json({ error: "Passsword is required and 6 character long" });
-    }
-    const hashedPassword = password ? await hashPassword(password) : undefined;
-    const updatedUser = await userModel.findByIdAndUpdate(
-      req.user._id,
-      {
-        name: name || user.name,
-        password: hashedPassword || user.password,
-        phone: phone || user.phone,
-        address: address || user.address,
-      },
-      { new: true }
-    );
-    res.status(200).send({
-      success: true,
-      message: "Profile Updated SUccessfully",
-      updatedUser,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(400).send({
-      success: false,
-      message: "Error WHile Update profile",
-      error,
-    });
-  }
-};
-
-//orders
-export const getOrdersController = async (req, res) => {
-  try {
-    const orders = await orderModel
-      .find({ buyer: req.user._id })
-      .populate("products", "-photo")
-      .populate("buyer", "name");
-    res.json(orders);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      success: false,
-      message: "Error WHile Geting Orders",
-      error,
-    });
-  }
-};
-//orders
-export const getAllOrdersController = async (req, res) => {
-  try {
-    const orders = await orderModel
-      .find({})
-      .populate("products", "-photo")
-      .populate("buyer", "name")
-      .sort({ createdAt: "-1" });
-    res.json(orders);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      success: false,
-      message: "Error WHile Geting Orders",
-      error,
-    });
-  }
-};
-
-//order status
-export const orderStatusController = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { status } = req.body;
-    const orders = await orderModel.findByIdAndUpdate(
-      orderId,
-      { status },
-      { new: true }
-    );
-    res.json(orders);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      success: false,
-      message: "Error While Updateing Order",
-      error,
-    });
-  }
-};
