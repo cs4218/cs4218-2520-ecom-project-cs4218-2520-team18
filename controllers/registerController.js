@@ -2,7 +2,7 @@ import userModel from "../models/userModel.js";
 
 
 import { hashPassword } from "../helpers/authHelper.js";
-import { validateEmail, validatePhoneE164, validatePassword, validateDOB, validateDOBNotFuture } from "../helpers/validationHelper.js";
+import { validateEmail, validatePhoneE164, validatePassword, validateDOB, validateDOBNotFuture, validateName } from "../helpers/validationHelper.js";
 
 export const registerController = async (req, res) => {
   try {
@@ -60,10 +60,10 @@ export const registerController = async (req, res) => {
       });
     }
 
-    if (name && name.length > 100) {
+    if (!validateName(name)) {
       return res.status(400).send({
         success: false,
-        message: "Name must be less than 100 characters",
+        message: "Name must be between 1 and 100 characters",
       });
     }
 

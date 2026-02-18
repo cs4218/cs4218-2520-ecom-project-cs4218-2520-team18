@@ -7,6 +7,7 @@ import {
   validatePassword,
   validateDOB,
   validateDOBNotFuture,
+  validateName,
 } from "../helpers/validationHelper.js";
 
 // Mock dependencies
@@ -55,6 +56,7 @@ describe("registerController Comprehensive Unit Tests", () => {
     validateEmail.mockReturnValue(true);
     validatePhoneE164.mockReturnValue(true);
     validatePassword.mockReturnValue(true);
+    validateName.mockReturnValue(true);
     validateDOB.mockReturnValue(true);
     validateDOBNotFuture.mockReturnValue(true);
   });
@@ -151,9 +153,9 @@ describe("registerController Comprehensive Unit Tests", () => {
       );
     });
 
-    test("should return 400 if name exceeds 100 characters", async () => {
+    test("should return 400 if validateName returns false (BVA - Name length validation)", async () => {
       // Arrange
-      req.body.name = "A".repeat(101);
+      validateName.mockReturnValue(false);
 
       // Act
       await registerController(req, res);
@@ -162,7 +164,7 @@ describe("registerController Comprehensive Unit Tests", () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "Name must be less than 100 characters",
+          message: "Name must be between 1 and 100 characters",
         })
       );
     });
