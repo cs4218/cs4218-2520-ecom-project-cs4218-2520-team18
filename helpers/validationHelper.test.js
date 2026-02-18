@@ -1,166 +1,326 @@
 import {
-    validateEmail,
-    validatePhoneE164,
-    validatePassword,
-    validateDOB,
-    validateDOBNotFuture,
+  validateEmail,
+  validatePhoneE164,
+  validatePassword,
+  validateDOB,
+  validateDOBNotFuture,
+  validateName,
 } from "./validationHelper.js";
 
 describe("Validation Helper Tests", () => {
+  describe("validateEmail", () => {
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["valid@example.com", true, "Valid"],
+        ["test@mail.example.co.uk", true, "Valid subdomain"],
+        ["test.user+123@example.com", true, "Valid special chars"],
+        ["plainaddress", false, "Missing @"],
+        ["@missingusername.com", false, "Missing local"],
+        ["username@.com", false, "Missing domain"],
+        ["username@com", false, "Invalid format"],
+      ])(
+        "should validate email %p correctly (%s)",
+        (email, expected, description) => {
+          // Arrange & Act
+          const result = validateEmail(email);
 
-    describe("validateEmail", () => {
-        // Equivalence Partitioning (EP) - Valid Inputs
-        it("should return true for valid email addresses", () => {
-            expect(validateEmail("valid@example.com")).toBe(true);
-        });
-
-        // Equivalence Partitioning (EP) - Invalid Inputs
-        it("should return false for invalid email addresses", () => {
-            expect(validateEmail("plainaddress")).toBe(false);
-            expect(validateEmail("@missingusername.com")).toBe(false);
-            expect(validateEmail("username@.com")).toBe(false);
-            expect(validateEmail("username@com")).toBe(false);
-            expect(validateEmail("username@domain..com")).toBe(false);
-            expect(validateEmail("#$%^&*()@example.com")).toBe(false);
-            expect(validateEmail("Joe Smith <email@example.com>")).toBe(false);
-            expect(validateEmail("email@example@example.com")).toBe(false);
-            expect(validateEmail("email@example.com (email)")).toBe(false);
-        });
-
-        // Edge Cases
-        it("should handle empty strings and null/undefined gracefully", () => {
-            expect(validateEmail("")).toBe(false);
-            expect(validateEmail(null)).toBe(false);
-            expect(validateEmail(undefined)).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
     });
 
-    describe("validatePhoneE164", () => {
-        // EP - Valid
-        it("should return true for valid E.164 numbers", () => {
-            expect(validatePhoneE164("+14155552671")).toBe(true);
-            expect(validatePhoneE164("14155552671")).toBe(true);
-        });
+    describe("Edge Cases", () => {
+      test.each([
+        ["username@domain..com", false, "Double dots"],
+        ["#$%^&*()@example.com", false, "Invalid chars"],
+        ["Joe Smith <email@example.com>", false, "Display name"],
+        ["email@example@example.com", false, "Multiple @"],
+        ["email@example.com (email)", false, "Comment suffix"],
+        ["", false, "Empty"],
+        [null, false, "Null"],
+        [undefined, false, "Undefined"],
+      ])(
+        "should validate email %p correctly (%s)",
+        (email, expected, description) => {
+          // Arrange & Act
+          const result = validateEmail(email);
 
-        // EP - Invalid
-        it("should return false for invalid structure", () => {
-            expect(validatePhoneE164("+")).toBe(false);
-            expect(validatePhoneE164("+012345678")).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
 
-        it("should return true for minimum valid length (2 digits)", () => {
-            // e.g. +12
-            expect(validatePhoneE164("+12")).toBe(true);
-            expect(validatePhoneE164("12")).toBe(true);
-        });
+  describe("validatePhoneE164", () => {
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["+14155552671", true, "Valid"],
+        ["14155552671", true, "Valid numeric"],
+        ["+012345678", false, "Invalid leading zero"],
+      ])(
+        "should validate phone %p correctly (%s)",
+        (phone, expected, description) => {
+          // Arrange & Act
+          const result = validatePhoneE164(phone);
 
-        it("should return true for length > 2 (3 digit)", () => {
-            expect(validatePhoneE164("123")).toBe(true);
-            expect(validatePhoneE164("+123")).toBe(true);
-        });
-
-        it("should return false for length < 2 (1 digit)", () => {
-            expect(validatePhoneE164("1")).toBe(false);
-            expect(validatePhoneE164("+1")).toBe(false);
-        });
-
-        it("should return true for length < 15 (14 digits)", () => {
-            const maxDigits = "2".repeat(14);
-            expect(validatePhoneE164(maxDigits)).toBe(true);
-            expect(validatePhoneE164("+" + maxDigits)).toBe(true);
-        });
-
-        it("should return true for maximum valid length (15 digits)", () => {
-            // 1 + 14 digits
-            const maxDigits = "1" + "2".repeat(14);
-            expect(validatePhoneE164(maxDigits)).toBe(true);
-            expect(validatePhoneE164("+" + maxDigits)).toBe(true);
-        });
-
-        it("should return false for length > 15 (16 digits)", () => {
-            const tooLong = "1" + "2".repeat(15);
-            expect(validatePhoneE164(tooLong)).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
     });
 
-    describe("validatePassword", () => {
-        // BVA
-        it("should return true for length equal to 6", () => {
-            expect(validatePassword("123456")).toBe(true);
-        });
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["+", false, "Minimal invalid"],
+        ["+12", true, "Lower boundary"],
+        ["12", true, "Lower boundary"],
+        ["123", true, "Just above minimum"],
+        ["+123", true, "Just above minimum"],
+        ["1", false, "Below minimum boundary"],
+        ["+1", false, "Below minimum boundary"],
+        ["2".repeat(14), true, "Just below maximum"],
+        ["+" + "2".repeat(14), true, "Just below maximum"],
+        ["1" + "2".repeat(14), true, "At maximum boundary"],
+        ["+" + "1" + "2".repeat(14), true, "At maximum boundary"],
+        ["1" + "2".repeat(15), false, "Above maximum boundary"],
+      ])(
+        "should validate phone %p correctly (%s)",
+        (phone, expected, description) => {
+          // Arrange & Act
+          const result = validatePhoneE164(phone);
 
-        it("should return false for length equal to 5", () => {
-            expect(validatePassword("12345")).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
 
-        // EP
-        it("should return true for length greater than 6", () => {
-            expect(validatePassword("12345678")).toBe(true);
-        });
+  describe("validateName", () => {
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["John Doe", true, "Valid"],
+        ["John Michael Smith", true, "Valid multi-word"],
+        ["José García", true, "Valid with accents"],
+        ["Mary-Jane", true, "Valid with hyphen"],
+        ["O'Brien", true, "Valid with apostrophe"],
+      ])(
+        "should validate name %p correctly (%s)",
+        (name, expected, description) => {
+          // Arrange & Act
+          const result = validateName(name);
 
-        it("should handle empty string", () => {
-            expect(validatePassword("")).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
     });
 
-    describe("validateDOB", () => {
-        // EP - Valid Format
-        it("should return true for valid YYYY-MM-DD format", () => {
-            expect(validateDOB("2023-01-01")).toBe(true);
-            expect(validateDOB("1990-12-31")).toBe(true);
-        });
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["A", true, "At minimum boundary (1 char)"],
+        ["", false, "Below minimum boundary (0 chars)"],
+        ["A".repeat(100), true, "At maximum boundary (100 chars)"],
+        ["A".repeat(101), false, "Above maximum boundary (101 chars)"],
+      ])(
+        "should validate name %p correctly (%s)",
+        (name, expected, description) => {
+          // Arrange & Act
+          const result = validateName(name);
 
-        // EP - Invalid Format
-        it("should return false for invalid formats", () => {
-            expect(validateDOB("01-01-2023")).toBe(false); // DD-MM-YYYY
-            expect(validateDOB("2023/01/01")).toBe(false); // Wrong separator
-            expect(validateDOB("23-01-01")).toBe(false); // 2 digit year
-        });
-
-        // Edge Cases around regex matching
-        it("should return false for strings with extra characters", () => {
-            expect(validateDOB(" 2023-01-01 ")).toBe(false);
-            expect(validateDOB("a2023-01-01")).toBe(false);
-        });
-
-        it("should return false for invalid date values even if valid format", () => {
-            expect(validateDOB("2023-13-32")).toBe(false); // Invalid month and day
-            expect(validateDOB("2023-02-30")).toBe(false); // Feb 30th does not exist
-            expect(validateDOB("2023-04-31")).toBe(false); // April has 30 days
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
     });
 
-    describe("validateDOBNotFuture", () => {
-        beforeAll(() => {
-            jest.useFakeTimers();
-            jest.setSystemTime(new Date("2023-06-15")); // Mock "Today" as June 15, 2023
-        });
+    describe("Edge Cases", () => {
+      test.each([
+        ["  ", false, "Spaces only"],
+        [null, false, "Null"],
+        [undefined, false, "Undefined"],
+      ])(
+        "should validate name %p correctly (%s)",
+        (name, expected, description) => {
+          // Arrange & Act
+          const result = validateName(name);
 
-        afterAll(() => {
-            jest.useRealTimers();
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
+  describe("validatePassword", () => {
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["123456", true, "At minimum boundary"],
+        ["12345", false, "Below minimum boundary"],
+      ])(
+        "should validate password %p correctly (%s)",
+        (password, expected, description) => {
+          // Arrange & Act
+          const result = validatePassword(password);
 
-        // EP - Past Date
-        it("should return true for a past date", () => {
-            expect(validateDOBNotFuture("2023-06-14")).toBe(true);
-            expect(validateDOBNotFuture("2000-01-01")).toBe(true);
-        });
-
-        // EP - Future Date
-        it("should return false for a future date", () => {
-            expect(validateDOBNotFuture("2023-06-16")).toBe(false);
-            expect(validateDOBNotFuture("2024-01-01")).toBe(false);
-        });
-
-        // BVA - Today
-        it("should return false for today (implementation uses < not <= when comparing with new Date())", () => {
-            expect(validateDOBNotFuture("2023-06-15")).toBe(false);
-        });
-
-        // Edge Cases
-        it("should handle invalid date string gracefully (Date comparison behavior)", () => {
-            expect(validateDOBNotFuture("invalid-date")).toBe(false);
-        });
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
     });
 
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["12345678", true, "Valid"],
+        ["P@ssw0rd!", true, "Special chars"],
+      ])(
+        "should validate password %p correctly (%s)",
+        (password, expected, description) => {
+          // Arrange & Act
+          const result = validatePassword(password);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe("Edge Cases", () => {
+      test.each([
+        ["a".repeat(1000), true, "Very long"],
+        ["  pass123  ", true, "Spaces preserved"],
+        ["", false, "Empty"],
+        [null, false, "Null"],
+        [undefined, false, "Undefined"],
+      ])(
+        "should validate password %p correctly (%s)",
+        (password, expected, description) => {
+          // Arrange & Act
+          const result = validatePassword(password);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
+
+  describe("validateDOB", () => {
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["2023-01-01", true, "Valid format"],
+        ["1990-12-31", true, "Valid"],
+        ["2023-02-30", false, "Invalid day for month"],
+      ])(
+        "should validate DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOB(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["2023-13-32", false, "Above range"],
+        ["2000-00-01", false, "Below range"],
+      ])(
+        "should validate DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOB(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe("Edge Cases", () => {
+      test.each([
+        ["1900-01-01", true, "Very old date"],
+        ["2020-02-29", true, "Leap year Feb 29"],
+        ["01-01-2023", false, "Wrong format"],
+        ["2023/01/01", false, "Wrong separator"],
+        ["23-01-01", false, "Invalid format"],
+        [" 2023-01-01", false, "Leading whitespace"],
+        ["2023-01-01 ", false, "Trailing whitespace"],
+        ["a2023-01-01", false, "Invalid chars"],
+        ["2021-02-29", false, "Invalid leap year"],
+        ["2000-01-01 12:00:00", false, "Timestamp"],
+      ])(
+        "should validate DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOB(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
+
+  describe("validateDOBNotFuture", () => {
+    beforeAll(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2023-06-15")); // Mock "Today" as June 15, 2023
+    });
+
+    afterAll(() => {
+      jest.useRealTimers();
+    });
+
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["2023-06-14", true, "Valid past date"],
+        ["2000-01-01", true, "Valid old date"],
+        ["2023-06-16", false, "Invalid future date"],
+        ["2024-01-01", false, "Invalid future date"],
+      ])(
+        "should validate future DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOBNotFuture(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["2023-06-15", false, "Boundary at current date"],
+      ])(
+        "should validate future DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOBNotFuture(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+
+    describe("Edge Cases", () => {
+      test.each([
+        ["invalid-date", false, "Invalid format"],
+      ])(
+        "should validate future DOB %p correctly (%s)",
+        (dob, expected, description) => {
+          // Arrange & Act
+          const result = validateDOBNotFuture(dob);
+
+          // Assert
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
 });

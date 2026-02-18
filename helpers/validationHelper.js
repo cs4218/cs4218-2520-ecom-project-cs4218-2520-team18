@@ -9,7 +9,15 @@ export const validatePhoneE164 = (phone) => {
 }
 
 export const validatePassword = (password) => {
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
+        return false;
+    }
+    return true;
+}
+
+export const validateName = (name) => {
+    // Name should be between 1 and 100 characters
+    if (!name || name.trim().length === 0 || name.trim().length > 100) {
         return false;
     }
     return true;
