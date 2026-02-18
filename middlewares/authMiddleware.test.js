@@ -96,7 +96,16 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
       });
     });
 
-    describe("Edge Cases & Boundary Values", () => {
+    describe("JWT Verification Error Handling (With console.error mocking)", () => {
+      beforeEach(() => {
+        // Only mock console.error for JWT verification error cases
+        jest.spyOn(console, "error").mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        console.error.mockRestore();
+      });
+
       test("should return 401 if header has double spaces (BVA)", async () => {
         // Arrange
         req.headers.authorization = "Bearer  token";
@@ -109,73 +118,6 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
 
         // Assert
         expect(res.status).toHaveBeenCalledWith(401);
-        expect(next).not.toHaveBeenCalled();
-      });
-
-      test("should handle case-insensitive 'bearer' prefix (EP)", async () => {
-        // Arrange
-        const token = "valid-token";
-        req.headers.authorization = `bearer ${token}`;
-        const decodedUser = { _id: "user123" };
-        JWT.verify.mockReturnValue(decodedUser);
-
-        // Act
-        await requireSignIn(req, res, next);
-
-        // Assert
-        expect(JWT.verify).toHaveBeenCalledWith(token, process.env.JWT_SECRET);
-        expect(req.user).toEqual(decodedUser);
-        expect(next).toHaveBeenCalled();
-      });
-
-      test("should return 401 if authorization header is just the word 'Bearer' (BVA)", async () => {
-        // Arrange
-        req.headers.authorization = "Bearer";
-
-        // Act
-        await requireSignIn(req, res, next);
-
-        // Assert
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: "Authorization header is invalid",
-          })
-        );
-        expect(next).not.toHaveBeenCalled();
-      });
-
-      test("should return 401 if authorization header is just lowercase 'bearer' (BVA)", async () => {
-        // Arrange
-        req.headers.authorization = "bearer";
-
-        // Act
-        await requireSignIn(req, res, next);
-
-        // Assert
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: "Authorization header is invalid",
-          })
-        );
-        expect(next).not.toHaveBeenCalled();
-      });
-
-      test("should return 401 if authorization header is just uppercase 'BEARER' (BVA)", async () => {
-        // Arrange
-        req.headers.authorization = "BEARER";
-
-        // Act
-        await requireSignIn(req, res, next);
-
-        // Assert
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: "Authorization header is invalid",
-          })
-        );
         expect(next).not.toHaveBeenCalled();
       });
 
@@ -211,6 +153,73 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
       });
     });
 
+    test("should handle case-insensitive 'bearer' prefix (EP)", async () => {
+      // Arrange
+      const token = "valid-token";
+      req.headers.authorization = `bearer ${token}`;
+      const decodedUser = { _id: "user123" };
+      JWT.verify.mockReturnValue(decodedUser);
+
+      // Act
+      await requireSignIn(req, res, next);
+
+      // Assert
+      expect(JWT.verify).toHaveBeenCalledWith(token, process.env.JWT_SECRET);
+      expect(req.user).toEqual(decodedUser);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test("should return 401 if authorization header is just the word 'Bearer' (BVA)", async () => {
+      // Arrange
+      req.headers.authorization = "Bearer";
+
+      // Act
+      await requireSignIn(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Authorization header is invalid",
+        }),
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test("should return 401 if authorization header is just lowercase 'bearer' (BVA)", async () => {
+      // Arrange
+      req.headers.authorization = "bearer";
+
+      // Act
+      await requireSignIn(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Authorization header is invalid",
+        }),
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test("should return 401 if authorization header is just uppercase 'BEARER' (BVA)", async () => {
+      // Arrange
+      req.headers.authorization = "BEARER";
+
+      // Act
+      await requireSignIn(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Authorization header is invalid",
+        }),
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
     describe("Error Handling", () => {
       let consoleSpy;
       beforeEach(() => {
@@ -230,7 +239,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
             message: "Authorization header is invalid",
-          })
+          }),
         );
         expect(next).not.toHaveBeenCalled();
       });
@@ -253,13 +262,13 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
           expect.objectContaining({
             success: false,
             message: "Unauthorized Access",
-          })
+          }),
         );
         expect(next).not.toHaveBeenCalled();
       });
     });
   });
-
+  
   describe("isAdmin Middleware", () => {
     describe("Successful Authorization", () => {
       test("should call next() if user is found and has role 1 (Admin)", async () => {
@@ -288,7 +297,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
         // Assert
         expect(res.status).toHaveBeenCalledWith(401);
         expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({ message: "Authentication required" })
+          expect.objectContaining({ message: "Authentication required" }),
         );
         expect(next).not.toHaveBeenCalled();
       });
@@ -310,7 +319,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
         // Assert
         expect(res.status).toHaveBeenCalledWith(403);
         expect(res.send).toHaveBeenCalledWith(
-          expect.objectContaining({ message: "Unauthorized Access" })
+          expect.objectContaining({ message: "Unauthorized Access" }),
         );
         expect(next).not.toHaveBeenCalled();
       });
@@ -340,7 +349,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
             success: false,
             message: "Error in Auth Middleware",
             error: dbError,
-          })
+          }),
         );
         expect(next).not.toHaveBeenCalled();
       });
