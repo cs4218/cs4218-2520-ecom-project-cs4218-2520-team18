@@ -39,8 +39,8 @@ const Register = () => {
     };
 
     // Basic client-side validation (keeps tests predictable) form
-    if (!payload.name) {
-      toast.error('Name is required');
+    if (!payload.name || payload.name.length > 100) {
+      toast.error('Name should be 1 to 100 characters');
       return;
     }
 
