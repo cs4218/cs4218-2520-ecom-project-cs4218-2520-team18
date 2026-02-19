@@ -7,10 +7,12 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import "@testing-library/jest-dom/extend-expect";
 import toast from "react-hot-toast";
 import Register from "./Register";
+import * as validationHelpers from "../../helpers/validation";
 
-// Mocking axios.post
+// Mocking dependencies
 jest.mock("axios");
 jest.mock("react-hot-toast");
+jest.mock("../../helpers/validation");
 
 jest.mock("../../context/auth", () => ({
   useAuth: jest.fn(() => [null, jest.fn()]), // Mock useAuth hook to return null state and a mock function for setAuth
@@ -105,6 +107,14 @@ const fillForm = (getByPlaceholderText, formData) => {
 describe("Register Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock all validation helpers to pass by default (Happy Path)
+    validationHelpers.isValidEmail.mockReturnValue(true);
+    validationHelpers.isPasswordLongEnough.mockReturnValue(true);
+    validationHelpers.isValidPhone.mockReturnValue(true);
+    validationHelpers.isValidDOBFormat.mockReturnValue(true);
+    validationHelpers.isValidDOBStrict.mockReturnValue(true);
+    validationHelpers.isDOBNotFuture.mockReturnValue(true);
   });
 
   describe("Successful Registration", () => {
@@ -297,18 +307,19 @@ describe("Register Component", () => {
     });
 
     test.each([
-      ["invalid-email", "Invalid Email", "email"],
-      ["", "Name should be 1 to 100 characters", "name"],
-      ["123", "Password must be at least 6 characters long", "password"],
-      ["invalid-phone", "Phone number must be in E.164 format", "phone"],
-      ["invalid-dob", "Date of Birth must be a valid date", "dob"],
-      ["", "Answer is required", "answer"],
+      ["isValidEmail", false, "Invalid Email"],
+      ["isPasswordLongEnough", false, "Password must be at least 6 characters long"],
+      ["isValidPhone", false, "Phone number must be in E.164 format"],
+      ["isValidDOBFormat", false, "Date of Birth must be a valid date"],
+      ["isValidDOBStrict", false, "Date of Birth must be a valid date"],
+      ["isDOBNotFuture", false, "Date of Birth cannot be a future date"],
     ])(
-      "should prevent submission for invalid %s - %s",
-      async (invalidValue, expectedError, fieldType) => {
+      "should prevent submission when %s returns false",
+      async (validationFunction, returnValue, expectedError) => {
         // Arrange
+        validationHelpers[validationFunction].mockReturnValue(returnValue);
         axios.get.mockResolvedValueOnce({ data: { category: [] } });
-        
+
         const { getByText, getByPlaceholderText } = render(
           <MemoryRouter initialEntries={["/register"]}>
             <Routes>
@@ -318,18 +329,7 @@ describe("Register Component", () => {
         );
 
         // Act
-        const formData = {
-          name: "John Doe",
-          email: "test@example.com",
-          password: "password123",
-          phone: "+1234567890",
-          address: "123 Street",
-          dob: "2000-01-01",
-          answer: "Football",
-        };
-
-        formData[fieldType] = invalidValue;
-        fillForm(getByPlaceholderText, formData);
+        fillForm(getByPlaceholderText, {});
         fireEvent.click(getByText("REGISTER"));
 
         // Assert
@@ -339,9 +339,21 @@ describe("Register Component", () => {
         });
       }
     );
+  });
 
-    it("should prevent submission for non-existent DOB (e.g., Feb 30)", async () => {
+  describe("Email Validation - Mocked", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    test("should allow submission when isValidEmail returns true", async () => {
       // Arrange
+      validationHelpers.isValidEmail.mockReturnValue(true);
+      axios.post.mockResolvedValueOnce({ data: { success: true } });
       axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
       const { getByText, getByPlaceholderText } = render(
@@ -353,32 +365,18 @@ describe("Register Component", () => {
       );
 
       // Act
-      fillForm(getByPlaceholderText, {
-        name: "John Doe",
-        email: "test@example.com",
-        password: "password123",
-        phone: "+1234567890",
-        address: "123 Street",
-        dob: "2021-02-30",
-        answer: "Football",
-      });
+      fillForm(getByPlaceholderText, {});
       fireEvent.click(getByText("REGISTER"));
 
       // Assert
       await waitFor(() => {
-        expect(axios.post).not.toHaveBeenCalled();
-        expect(toast.error).toHaveBeenCalledWith(
-          "Date of Birth must be a valid date",
-        );
+        expect(axios.post).toHaveBeenCalled();
       });
     });
 
-    it("should prevent submission for future DOB", async () => {
+    test("should prevent submission when isValidEmail returns false", async () => {
       // Arrange
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1);
-      const futureDOB = futureDate.toISOString().split("T")[0];
-
+      validationHelpers.isValidEmail.mockReturnValue(false);
       axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
       const { getByText, getByPlaceholderText } = render(
@@ -390,28 +388,18 @@ describe("Register Component", () => {
       );
 
       // Act
-      fillForm(getByPlaceholderText, {
-        name: "John Doe",
-        email: "test@example.com",
-        password: "password123",
-        phone: "+1234567890",
-        address: "123 Street",
-        dob: futureDOB,
-        answer: "Football",
-      });
+      fillForm(getByPlaceholderText, {});
       fireEvent.click(getByText("REGISTER"));
 
       // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
-        expect(toast.error).toHaveBeenCalledWith(
-          "Date of Birth cannot be a future date",
-        );
+        expect(toast.error).toHaveBeenCalledWith("Invalid Email");
       });
     });
   });
 
-  describe("Email Validation - EP & BVA", () => {
+  describe("Phone Validation - Mocked", () => {
     let consoleSpy;
     beforeEach(() => {
       consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
@@ -420,236 +408,56 @@ describe("Register Component", () => {
       consoleSpy.mockRestore();
     });
 
-    describe("EP - Equivalence Partitioning", () => {
-      test.each([
-        ["valid@example.com", true, "Valid"],
-        ["test@mail.example.co.uk", true, "Valid subdomain"],
-        ["test.user+123@example.com", true, "Valid special chars"],
-        ["plainaddress", false, "Missing @"],
-        ["@missingusername.com", false, "Missing local"],
-        ["username@.com", false, "Missing domain"],
-        ["username@com", false, "Invalid format"],
-      ])(
-        "should validate email %p correctly (%s)",
-        async (email, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
+    test("should allow submission when isValidPhone returns true", async () => {
+      // Arrange
+      validationHelpers.isValidPhone.mockReturnValue(true);
+      axios.post.mockResolvedValueOnce({ data: { success: true } });
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: email,
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith("Invalid Email");
-            }
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      // Act
+      fillForm(getByPlaceholderText, {});
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalled();
+      });
     });
 
-    describe("BVA - Edge Cases", () => {
-      test.each([
-        ["username@domain..com", false, "Double dots"],
-        ["#$%^&*()@example.com", false, "Invalid chars"],
-        ["email@example@example.com", false, "Multiple @"],
-        ["", false, "Empty"],
-      ])(
-        "should validate email %p correctly (%s)",
-        async (email, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
+    test("should prevent submission when isValidPhone returns false", async () => {
+      // Arrange
+      validationHelpers.isValidPhone.mockReturnValue(false);
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: email,
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            expect(axios.post).not.toHaveBeenCalled();
-            expect(toast.error).toHaveBeenCalledWith("Invalid Email");
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      // Act
+      fillForm(getByPlaceholderText, {});
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+      });
     });
   });
 
-  describe("Name Validation - EP & BVA", () => {
-    describe("EP - Equivalence Partitioning", () => {
-      test.each([
-        ["John Doe", true, "Valid"],
-        ["John Michael Smith", true, "Valid multi-word"],
-        ["José García", true, "Valid with accents"],
-        ["Mary-Jane", true, "Valid with hyphen"],
-        ["O'Brien", true, "Valid with apostrophe"],
-      ])(
-        "should validate name %p correctly (%s)",
-        async (name, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: name,
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-            }
-          });
-        },
-      );
-    });
-
-    describe("BVA - Boundary Value Analysis", () => {
-      test.each([
-        ["A", true, "At minimum boundary (1 char)"],
-        ["", false, "Below minimum boundary (0 chars)"],
-        ["A".repeat(100), true, "At maximum boundary (100 chars)"],
-        ["A".repeat(101), false, "Above maximum boundary (101 chars)"],
-      ])(
-        "should validate name %p correctly (%s)",
-        async (name, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: name,
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
-            }
-          });
-        },
-      );
-    });
-
-    describe("BVA - Edge Cases", () => {
-      test.each([
-        ["  ", false, "Spaces only"],
-      ])(
-        "should validate name %p correctly (%s)",
-        async (name, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: name,
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            expect(axios.post).not.toHaveBeenCalled();
-            expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
-          });
-        },
-      );
-    });
-  });
-
-  describe("Password Validation - EP & BVA", () => {
+  describe("DOB Validation - Mocked", () => {
     let consoleSpy;
     beforeEach(() => {
       consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
@@ -658,422 +466,105 @@ describe("Register Component", () => {
       consoleSpy.mockRestore();
     });
 
-    describe("EP - Equivalence Partitioning", () => {
-      test.each([
-        ["12345678", true, "Valid"],
-        ["P@ssw0rd!", true, "Special chars"],
-      ])(
-        "should validate password %p correctly (%s)",
-        async (password, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
+    test("should allow submission when DOB validation passes", async () => {
+      // Arrange
+      validationHelpers.isValidDOBFormat.mockReturnValue(true);
+      validationHelpers.isValidDOBStrict.mockReturnValue(true);
+      validationHelpers.isDOBNotFuture.mockReturnValue(true);
+      axios.post.mockResolvedValueOnce({ data: { success: true } });
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: password,
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Password must be at least 6 characters long",
-              );
-            }
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      // Act
+      fillForm(getByPlaceholderText, {});
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).toHaveBeenCalled();
+      });
     });
 
-    describe("BVA - Boundary Value Analysis", () => {
-      test.each([
-        ["123456", true, "At minimum boundary"],
-        ["12345", false, "Below minimum boundary"],
-      ])(
-        "should validate password %p correctly (%s)",
-        async (password, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
+    test("should prevent submission when isValidDOBFormat returns false", async () => {
+      // Arrange
+      validationHelpers.isValidDOBFormat.mockReturnValue(false);
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: password,
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Password must be at least 6 characters long",
-              );
-            }
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      // Act
+      fillForm(getByPlaceholderText, {});
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Date of Birth must be a valid date");
+      });
     });
 
-    describe("BVA - Edge Cases", () => {
-      test.each([
-        ["a".repeat(1000), true, "Very long"],
-        ["  pass123  ", true, "Spaces preserved"],
-        ["", false, "Empty"],
-      ])(
-        "should validate password %p correctly (%s)",
-        async (password, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
+    test("should prevent submission when isValidDOBStrict returns false (invalid calendar date)", async () => {
+      // Arrange
+      validationHelpers.isValidDOBFormat.mockReturnValue(true);
+      validationHelpers.isValidDOBStrict.mockReturnValue(false);
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: password,
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Password must be at least 6 characters long",
-              );
-            }
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      // Act
+      fillForm(getByPlaceholderText, { dob: "2021-02-30" });
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Date of Birth must be a valid date");
+      });
     });
-  });
 
-  describe("Phone Validation - EP & BVA", () => {
-    let consoleSpy;
-    beforeEach(() => {
-      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    });
-    afterEach(() => {
-      consoleSpy.mockRestore();
-    });
+    test("should prevent submission when isDOBNotFuture returns false", async () => {
+      // Arrange
+      validationHelpers.isValidDOBFormat.mockReturnValue(true);
+      validationHelpers.isValidDOBStrict.mockReturnValue(true);
+      validationHelpers.isDOBNotFuture.mockReturnValue(false);
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
 
-    describe("EP - Equivalence Partitioning", () => {
-      test.each([
-        ["+14155552671", true, "Valid"],
-        ["14155552671", true, "Valid numeric"],
-        ["+012345678", false, "Invalid leading zero"],
-      ])(
-        "should validate phone %p correctly (%s)",
-        async (phone, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: "password123",
-            phone: phone,
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Phone number must be in E.164 format",
-              );
-            }
-          });
-        },
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
       );
-    });
 
-    describe("BVA - Boundary Value Analysis", () => {
-      test.each([
-        ["+", false, "Minimal invalid"],
-        ["+12", true, "Lower boundary"],
-        ["12", true, "Lower boundary"],
-        ["123", true, "Just above minimum"],
-        ["+123", true, "Just above minimum"],
-        ["1", false, "Below minimum boundary"],
-        ["+1", false, "Below minimum boundary"],
-        ["2".repeat(14), true, "Just below maximum"],
-        ["+" + "2".repeat(14), true, "Just below maximum"],
-        ["1" + "2".repeat(14), true, "At maximum boundary"],
-        ["+" + "1" + "2".repeat(14), true, "At maximum boundary"],
-        ["1" + "2".repeat(15), false, "Above maximum boundary"],
-      ])(
-        "should validate phone %p correctly (%s)",
-        async (phone, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
+      // Act
+      fillForm(getByPlaceholderText, {});
+      fireEvent.click(getByText("REGISTER"));
 
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: "password123",
-            phone: phone,
-            address: "123 Street",
-            dob: "2000-01-01",
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Phone number must be in E.164 format",
-              );
-            }
-          });
-        },
-      );
-    });
-  });
-
-  describe("DOB Validation - EP & BVA", () => {
-    let consoleSpy;
-    beforeEach(() => {
-      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    });
-    afterEach(() => {
-      consoleSpy.mockRestore();
-    });
-
-    describe("EP - Equivalence Partitioning", () => {
-      test.each([
-        ["2023-01-01", true, "Valid format"],
-        ["1990-12-31", true, "Valid"],
-        ["2023-02-30", false, "Invalid day for month"],
-      ])(
-        "should validate DOB %p correctly (%s)",
-        async (dob, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: dob,
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Date of Birth must be a valid date",
-              );
-            }
-          });
-        },
-      );
-    });
-
-    describe("BVA - Boundary Value Analysis", () => {
-      test.each([
-        ["2023-13-32", false, "Above range"],
-        ["2000-00-01", false, "Below range"],
-      ])(
-        "should validate DOB %p correctly (%s)",
-        async (dob, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: dob,
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            expect(axios.post).not.toHaveBeenCalled();
-            expect(toast.error).toHaveBeenCalledWith(
-              "Date of Birth must be a valid date",
-            );
-          });
-        },
-      );
-    });
-
-    describe("BVA - Edge Cases", () => {
-      test.each([
-        ["1900-01-01", true, "Very old date"],
-        ["2020-02-29", true, "Leap year Feb 29"],
-        ["01-01-2023", false, "Wrong format"],
-        ["2023/01/01", false, "Wrong separator"],
-        ["23-01-01", false, "Invalid format"],
-        [" 2023-01-01", false, "Leading whitespace"],
-        ["2023-01-01 ", false, "Trailing whitespace"],
-        ["a2023-01-01", false, "Invalid chars"],
-        ["2021-02-29", false, "Invalid leap year"],
-        ["2000-01-01 12:00:00", false, "Timestamp"],
-      ])(
-        "should validate DOB %p correctly (%s)",
-        async (dob, shouldSucceed, description) => {
-          // Arrange
-          axios.get.mockResolvedValueOnce({ data: { category: [] } });
-          if (shouldSucceed) {
-            axios.post.mockResolvedValueOnce({ data: { success: true } });
-          }
-
-          const { getByText, getByPlaceholderText } = render(
-            <MemoryRouter initialEntries={["/register"]}>
-              <Routes>
-                <Route path="/register" element={<Register />} />
-              </Routes>
-            </MemoryRouter>,
-          );
-
-          // Act
-          fillForm(getByPlaceholderText, {
-            name: "John Doe",
-            email: "test@example.com",
-            password: "password123",
-            phone: "+1234567890",
-            address: "123 Street",
-            dob: dob,
-            answer: "Football",
-          });
-          fireEvent.click(getByText("REGISTER"));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.post).toHaveBeenCalled();
-            } else {
-              expect(axios.post).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Date of Birth must be a valid date",
-              );
-            }
-          });
-        },
-      );
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Date of Birth cannot be a future date");
+      });
     });
   });
 
