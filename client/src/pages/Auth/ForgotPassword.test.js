@@ -184,6 +184,86 @@ describe("ForgotPassword Component", () => {
     });
   });
 
+  describe("Input Validation - Empty Fields", () => {
+    it("should show error when email is empty", async () => {
+      // Arrange
+      const { getByPlaceholderText, getByText } = render(
+        <MemoryRouter initialEntries={["/forgot-password"]}>
+          <Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+        target: { value: "test answer" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+        target: { value: "newpassword123" },
+      });
+      fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Email is required");
+      });
+    });
+
+    it("should show error when answer is empty", async () => {
+      // Arrange
+      const { getByPlaceholderText, getByText } = render(
+        <MemoryRouter initialEntries={["/forgot-password"]}>
+          <Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+        target: { value: "newpassword123" },
+      });
+      fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Security answer is required");
+      });
+    });
+
+    it("should show error when newPassword is empty", async () => {
+      // Arrange
+      const { getByPlaceholderText, getByText } = render(
+        <MemoryRouter initialEntries={["/forgot-password"]}>
+          <Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+        target: { value: "test answer" },
+      });
+      fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("New password is required");
+      });
+    });
+  });
+
   describe("Validation Tests - Mocked Helpers", () => {
     test.each([
       ["isValidEmail", false, "Invalid email format"],
