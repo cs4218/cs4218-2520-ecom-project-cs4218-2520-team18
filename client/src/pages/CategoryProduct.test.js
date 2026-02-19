@@ -23,6 +23,40 @@ describe('CategoryProduct Page', () => {
         jest.clearAllMocks();
     });
 
+    describe('Component rendering', () => {
+        it('should render without React warnings or errors', async () => {
+            // Arrange
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+            const mockCategory = { _id: 'cat1', name: 'Electronics' };
+            const mockProducts = [
+                {
+                    _id: 'prod1',
+                    name: 'Test Product',
+                    description: 'Test Description',
+                    price: 99.99,
+                    slug: 'test-product'
+                }
+            ];
+            useParams.mockReturnValue({ slug: 'electronics' });
+            axios.get.mockResolvedValueOnce({
+                data: { category: mockCategory, products: mockProducts }
+            });
+
+            // Act
+            render(<CategoryProduct />);
+
+            // Assert
+            await waitFor(() => {
+                expect(screen.getByText('Category - Electronics')).toBeInTheDocument();
+                expect(axios.get).toHaveBeenCalledTimes(1);
+            });
+
+            // Verify no React warnings or errors were logged
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+            consoleErrorSpy.mockRestore();
+        });
+    });
+
     describe('getPrductsByCat function', () => {
         it('should fetch products when slug param exists', async () => {
             // Arrange
