@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import bcrypt from "bcrypt";
 
 export const hashPassword = async (password) => {

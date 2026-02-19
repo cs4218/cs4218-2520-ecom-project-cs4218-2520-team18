@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Profile from "./Profile";

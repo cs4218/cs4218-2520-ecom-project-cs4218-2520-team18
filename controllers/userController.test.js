@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import { updateProfileController } from "./userController.js";
 import userModel from "../models/userModel.js";
 import { hashPassword } from "../helpers/authHelper.js";

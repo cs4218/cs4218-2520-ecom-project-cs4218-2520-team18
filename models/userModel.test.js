@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import userModel from "../models/userModel.js";
 
 describe("User Model - Comprehensive Validation Tests", () => {

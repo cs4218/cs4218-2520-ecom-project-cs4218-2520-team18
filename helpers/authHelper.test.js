@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import bcrypt from "bcrypt";
 import { hashPassword, comparePassword } from "./authHelper.js";
 

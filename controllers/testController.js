@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 //test controller
 
 export const testController = (req, res) => {

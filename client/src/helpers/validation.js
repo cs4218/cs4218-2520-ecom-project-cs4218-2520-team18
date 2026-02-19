@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 export const isEmpty = (value) => {
   return value === undefined || value === null || String(value).trim() === "";
 };

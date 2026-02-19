@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import { hashPassword } from "../helpers/authHelper.js";
 import { validateEmail, validatePassword } from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";

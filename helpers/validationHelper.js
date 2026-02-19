@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 export const validateEmail = (email) => {
     const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
     return emailRegex.test(email);

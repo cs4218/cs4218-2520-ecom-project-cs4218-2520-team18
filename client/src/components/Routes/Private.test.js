@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { render, fireEvent, waitFor, screen } from "@testing-library/react";
 import axios from "axios";

@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import JWT from "jsonwebtoken";
 import { comparePassword } from "../helpers/authHelper.js";
 import { validateEmail } from "../helpers/validationHelper.js";

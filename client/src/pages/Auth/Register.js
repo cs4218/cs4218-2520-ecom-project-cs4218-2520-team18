@@ -1,10 +1,11 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React, { useState } from "react";
 import Layout from "./../../components/Layout";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
-  isEmpty,
   isValidEmail,
   isValidPhone,
   isValidDOBFormat,
