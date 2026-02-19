@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./auth";
@@ -60,12 +62,17 @@ describe("AuthProvider", () => {
   // Equivalence test for initial state
   describe("Initial State", () => {
     it("should have initial auth state with null user and empty token", async () => {
+      // Arrange
+      // (AuthProvider is arranged by render)
+
+      // Act
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("user").textContent).toBe("No User");
         expect(screen.getByTestId("token").textContent).toBe("No Token");
@@ -74,18 +81,21 @@ describe("AuthProvider", () => {
     });
 
     it("should load auth state from localStorage if available", async () => {
+      // Arrange
       const mockAuth = {
         user: { name: "Stored User" },
         token: "stored-token",
       };
       localStorage.setItem("auth", JSON.stringify(mockAuth));
 
+      // Act
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert
       expect(localStorage.getItem).toHaveBeenCalledWith("auth");
 
       await waitFor(() => {
@@ -98,18 +108,20 @@ describe("AuthProvider", () => {
     });
 
     it("should update auth state and axios header when setAuth is called", async () => {
+      // Arrange
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Act
       const button = screen.getByText("Set Auth");
-
       act(() => {
         button.click();
       });
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("user").textContent).toBe("Test User");
         expect(screen.getByTestId("token").textContent).toBe("test-token");
@@ -122,12 +134,17 @@ describe("AuthProvider", () => {
 
   describe("Boundary values and Edge Cases", () => {
     it("should handle empty localStorage gracefully", async () => {
+      // Arrange
+      // (TestComponent with AuthProvider renders with empty localStorage)
+
+      // Act
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("user").textContent).toBe("No User");
         expect(screen.getByTestId("token").textContent).toBe("No Token");
@@ -135,12 +152,14 @@ describe("AuthProvider", () => {
     });
 
     it("should handle malformed localStorage data gracefully", async () => {
+      // Arrange
       localStorage.setItem("auth", "malformed-json");
 
       const consoleErrorSpy = jest
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
+      // Act
       expect(() => {
         render(
           <AuthProvider>
@@ -149,22 +168,26 @@ describe("AuthProvider", () => {
         );
       }).not.toThrow();
 
+      // Assert
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });
 
     it("should handle partial auth data in localStorage (missing token)", async () => {
+      // Arrange
       const partialAuth = {
         user: { name: "Partial User" },
       };
       localStorage.setItem("auth", JSON.stringify(partialAuth));
 
+      // Act
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("user").textContent).toBe("Partial User");
         expect(screen.getByTestId("token").textContent).toBe("No Token");
@@ -172,16 +195,20 @@ describe("AuthProvider", () => {
     });
 
     it("should handle partial auth data in localStorage (missing user)", async () => {
+      // Arrange
       const partialAuth = {
         token: "partial-token",
       };
       localStorage.setItem("auth", JSON.stringify(partialAuth));
+
+      // Act
       render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("user").textContent).toBe("No User");
         expect(screen.getByTestId("token").textContent).toBe("partial-token");
@@ -189,30 +216,36 @@ describe("AuthProvider", () => {
     });
 
     it("should not re-assign axios headers if the token hasn't changed", async () => {
+      // Arrange
       const spy = jest.fn();
       Object.defineProperty(axios.defaults.headers.common, "Authorization", {
         set: spy,
         configurable: true,
       });
 
+      // Act
       const { rerender } = render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert - initial render should set header once
       expect(spy).toHaveBeenCalledTimes(1);
 
+      // Act - rerender with same data
       rerender(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert - header should not be set again if token unchanged
       expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it("should update axios header only when token changes", async () => {
+      // Arrange
       const setterSpy = jest.fn();
       let currentToken = "";
 
@@ -229,26 +262,32 @@ describe("AuthProvider", () => {
         return <div />;
       };
 
+      // Act
       const { rerender } = render(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert - initial render sets header
       expect(setterSpy).toHaveBeenCalledTimes(1);
 
+      // Act - rerender with same data
       rerender(
         <AuthProvider>
           <TestComponent />
         </AuthProvider>,
       );
 
+      // Assert - header not set again
       expect(setterSpy).toHaveBeenCalledTimes(1);
 
+      // Act - update auth with different user name (no token change)
       act(() => {
         setAuthReference((prev) => ({ ...prev, user: { name: "New Name" } }));
       });
 
+      // Assert - header still not set again (token unchanged)
       expect(setterSpy).toHaveBeenCalledTimes(1);
 
       act(() => {

@@ -1,10 +1,11 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React, { useState } from "react";
 import Layout from "./../../components/Layout";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
-  isEmpty,
   isValidEmail,
   isValidPhone,
   isValidDOBFormat,
@@ -39,8 +40,8 @@ const Register = () => {
     };
 
     // Basic client-side validation (keeps tests predictable) form
-    if (!payload.name) {
-      toast.error('Name is required');
+    if (!payload.name || payload.name.length > 100) {
+      toast.error('Name should be 1 to 100 characters');
       return;
     }
 

@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import axios from "axios";
@@ -22,6 +24,10 @@ jest.mock("../../context/search", () => ({
   useSearch: jest.fn(() => [{ keyword: "" }, jest.fn()]), // Mock useSearch hook to return null state and a mock function
 }));
 
+jest.mock("../../components/Layout", () => ({ children, title }) => (
+  <div data-testid="layout-mock" data-title={title}>{children}</div>
+));
+
 Object.defineProperty(window, "localStorage", {
   value: {
     setItem: jest.fn(),
@@ -41,18 +47,6 @@ window.matchMedia =
     };
   };
 
-// Suppress console output during tests
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.log = jest.fn();
-  console.error = jest.fn();
-});
-afterAll(() => {
-  console.log = originalConsoleLog;
-  console.error = originalConsoleError;
-});
-
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
@@ -62,9 +56,11 @@ jest.mock("react-router-dom", () => ({
 describe("ForgotPassword Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    axios.get.mockResolvedValue({ data: { category: [] } });
   });
 
   it("renders forgot password form", () => {
+    // Arrange & Act
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/forgot-password"]}>
         <Routes>
@@ -73,6 +69,7 @@ describe("ForgotPassword Component", () => {
       </MemoryRouter>,
     );
 
+    // Assert
     expect(getByText("Forgot Password")).toBeInTheDocument();
     expect(getByPlaceholderText("Enter Your Email")).toBeInTheDocument();
     expect(
@@ -82,6 +79,7 @@ describe("ForgotPassword Component", () => {
     expect(getByText("RESET PASSWORD")).toBeInTheDocument();
   });
   it("inputs should be initially empty", () => {
+    // Arrange & Act
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/forgot-password"]}>
         <Routes>
@@ -90,6 +88,7 @@ describe("ForgotPassword Component", () => {
       </MemoryRouter>,
     );
 
+    // Assert
     expect(getByText("Forgot Password")).toBeInTheDocument();
     expect(getByPlaceholderText("Enter Your Email").value).toBe("");
     expect(getByPlaceholderText("Enter Your Security Answer").value).toBe("");
@@ -97,6 +96,7 @@ describe("ForgotPassword Component", () => {
   });
   describe("Form Submission", () => {
     it("should submit the form successfully", async () => {
+      // Arrange
       axios.post.mockResolvedValue({
         data: { success: true, message: "Password reset successful" },
       });
@@ -109,6 +109,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -120,6 +121,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           "/api/v1/auth/forgot-password",
@@ -135,6 +137,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should handle form submission failure", async () => {
+      // Arrange
       axios.post.mockResolvedValue({
         data: { success: false, message: "Password reset failed" },
       });
@@ -147,6 +150,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -158,6 +162,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           "/api/v1/auth/forgot-password",
@@ -174,7 +179,16 @@ describe("ForgotPassword Component", () => {
   });
 
   describe("Error Handling", () => {
+    let consoleErrorSpy;
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
     it("should handle network or server errors gracefully", async () => {
+      // Arrange
       axios.post.mockRejectedValue(new Error("Network Error"));
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
@@ -184,6 +198,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -195,6 +210,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           "/api/v1/auth/forgot-password",
@@ -210,9 +226,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should log error and show generic message if error has no message", async () => {
-      const consoleErrorSpy = jest
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      // Arrange
       axios.post.mockRejectedValue({});
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
@@ -221,6 +235,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -232,6 +248,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           "/api/v1/auth/forgot-password",
@@ -246,13 +263,13 @@ describe("ForgotPassword Component", () => {
           "An unexpected error occurred",
         );
         expect(mockNavigate).not.toHaveBeenCalled();
-        consoleErrorSpy.mockRestore();
       });
     });
   });
 
   describe("Input Validation", () => {
     it("should show error if email is empty", async () => {
+      // Arrange
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -260,6 +277,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "" },
       });
@@ -271,6 +290,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith("Email is required");
@@ -279,6 +299,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should show error if answer is empty", async () => {
+      // Arrange
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -286,6 +307,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -297,6 +320,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith("Security answer is required");
@@ -305,6 +329,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should show error if new password is empty", async () => {
+      // Arrange
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -312,6 +337,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -322,6 +349,8 @@ describe("ForgotPassword Component", () => {
         target: { value: "" },
       });
       fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith("New password is required");
@@ -330,6 +359,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should trim and lowercase inputs before submission", async () => {
+      // Arrange
       axios.post.mockResolvedValue({
         data: { success: true, message: "Password reset successful" },
       });
@@ -341,6 +371,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       // Email and answer should be trimmed and lowercased
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "  TEST@gmail.com  " },
@@ -353,6 +385,7 @@ describe("ForgotPassword Component", () => {
       });
       fireEvent.click(getByText("RESET PASSWORD"));
 
+      // Assert
       await waitFor(() => {
         expect(axios.post).toHaveBeenCalledWith(
           "/api/v1/auth/forgot-password",
@@ -366,6 +399,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should prevent submission for invalid email format", async () => {
+      // Arrange
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -374,6 +408,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "invalid-email-format" },
       });
@@ -384,6 +419,8 @@ describe("ForgotPassword Component", () => {
         target: { value: "newpassword123" },
       });
       fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith("Invalid email format");
@@ -392,6 +429,7 @@ describe("ForgotPassword Component", () => {
     });
 
     it("should prevent submission for a 5 characters new password", async () => {
+      // Arrange
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -399,6 +437,8 @@ describe("ForgotPassword Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -409,6 +449,8 @@ describe("ForgotPassword Component", () => {
         target: { value: "short" },
       });
       fireEvent.click(getByText("RESET PASSWORD"));
+
+      // Assert
       await waitFor(() => {
         expect(axios.post).not.toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith(
@@ -419,8 +461,266 @@ describe("ForgotPassword Component", () => {
     });
   });
 
+  describe("Email Validation - EP & BVA", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["valid@example.com", true, "Valid"],
+        ["test@mail.example.co.uk", true, "Valid subdomain"],
+        ["test.user+123@example.com", true, "Valid special chars"],
+        ["plainaddress", false, "Missing @"],
+        ["@missingusername.com", false, "Missing local"],
+        ["username@.com", false, "Missing domain"],
+        ["username@com", false, "Invalid format"],
+      ])(
+        "should validate email %p correctly (%s)",
+        async (email, shouldSucceed, _description) => {
+          // Arrange
+          if (shouldSucceed) {
+            axios.post.mockResolvedValueOnce({
+              data: { success: true, message: "Password reset successful" },
+            });
+          }
+
+          const { getByPlaceholderText, getByText } = render(
+            <MemoryRouter initialEntries={["/forgot-password"]}>
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
+            </MemoryRouter>,
+          );
+
+          // Act
+          fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+            target: { value: email },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+            target: { value: "test answer" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+            target: { value: "newpassword123" },
+          });
+          fireEvent.click(getByText("RESET PASSWORD"));
+
+          // Assert
+          await waitFor(() => {
+            if (shouldSucceed) {
+              expect(axios.post).toHaveBeenCalled();
+            } else {
+              expect(axios.post).not.toHaveBeenCalled();
+              expect(toast.error).toHaveBeenCalledWith("Invalid email format");
+            }
+          });
+        },
+      );
+    });
+
+    describe("BVA - Edge Cases", () => {
+      test.each([
+        ["username@domain..com", false, "Double dots"],
+        ["#$%^&*()@example.com", false, "Invalid chars"],
+        ["email@example@example.com", false, "Multiple @"],
+        ["", false, "Empty"],
+      ])(
+        "should validate email %p correctly (%s)",
+        async (email, _shouldSucceed, _description) => {
+          // Arrange
+          const { getByPlaceholderText, getByText } = render(
+            <MemoryRouter initialEntries={["/forgot-password"]}>
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
+            </MemoryRouter>,
+          );
+
+          // Act
+          fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+            target: { value: email },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+            target: { value: "test answer" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+            target: { value: "newpassword123" },
+          });
+          fireEvent.click(getByText("RESET PASSWORD"));
+
+          // Assert
+          await waitFor(() => {
+            expect(axios.post).not.toHaveBeenCalled();
+            expect(toast.error).toHaveBeenCalled();
+          });
+        },
+      );
+    });
+  });
+
+  describe("Password Validation - EP & BVA", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    describe("EP - Equivalence Partitioning", () => {
+      test.each([
+        ["newpassword123", true, "Valid"],
+        ["P@ssw0rd!", true, "Special chars"],
+      ])(
+        "should validate password %p correctly (%s)",
+        async (password, shouldSucceed, _description) => {
+          // Arrange
+          if (shouldSucceed) {
+            axios.post.mockResolvedValueOnce({
+              data: { success: true, message: "Password reset successful" },
+            });
+          }
+
+          const { getByPlaceholderText, getByText } = render(
+            <MemoryRouter initialEntries={["/forgot-password"]}>
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
+            </MemoryRouter>,
+          );
+
+          // Act
+          fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+            target: { value: "test@example.com" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+            target: { value: "test answer" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+            target: { value: password },
+          });
+          fireEvent.click(getByText("RESET PASSWORD"));
+
+          // Assert
+          await waitFor(() => {
+            if (shouldSucceed) {
+              expect(axios.post).toHaveBeenCalled();
+            } else {
+              expect(axios.post).not.toHaveBeenCalled();
+              expect(toast.error).toHaveBeenCalledWith(
+                "New password must be at least 6 characters long",
+              );
+            }
+          });
+        },
+      );
+    });
+
+    describe("BVA - Boundary Value Analysis", () => {
+      test.each([
+        ["123456", true, "At minimum boundary"],
+        ["12345", false, "Below minimum boundary"],
+      ])(
+        "should validate password %p correctly (%s)",
+        async (password, shouldSucceed, _description) => {
+          // Arrange
+          if (shouldSucceed) {
+            axios.post.mockResolvedValueOnce({
+              data: { success: true, message: "Password reset successful" },
+            });
+          }
+
+          const { getByPlaceholderText, getByText } = render(
+            <MemoryRouter initialEntries={["/forgot-password"]}>
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
+            </MemoryRouter>,
+          );
+
+          // Act
+          fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+            target: { value: "test@example.com" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+            target: { value: "test answer" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+            target: { value: password },
+          });
+          fireEvent.click(getByText("RESET PASSWORD"));
+
+          // Assert
+          await waitFor(() => {
+            if (shouldSucceed) {
+              expect(axios.post).toHaveBeenCalled();
+            } else {
+              expect(axios.post).not.toHaveBeenCalled();
+              expect(toast.error).toHaveBeenCalledWith(
+                "New password must be at least 6 characters long",
+              );
+            }
+          });
+        },
+      );
+    });
+
+    describe("BVA - Edge Cases", () => {
+      test.each([
+        ["a".repeat(1000), true, "Very long"],
+        ["  pass123  ", true, "Spaces preserved"],
+        ["", false, "Empty"],
+      ])(
+        "should validate password %p correctly (%s)",
+        async (password, shouldSucceed, _description) => {
+          // Arrange
+          if (shouldSucceed) {
+            axios.post.mockResolvedValueOnce({
+              data: { success: true, message: "Password reset successful" },
+            });
+          }
+
+          const { getByPlaceholderText, getByText } = render(
+            <MemoryRouter initialEntries={["/forgot-password"]}>
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
+            </MemoryRouter>,
+          );
+
+          // Act
+          fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+            target: { value: "test@example.com" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your Security Answer"), {
+            target: { value: "test answer" },
+          });
+          fireEvent.change(getByPlaceholderText("Enter Your New Password"), {
+            target: { value: password },
+          });
+          fireEvent.click(getByText("RESET PASSWORD"));
+
+          // Assert
+          await waitFor(() => {
+            if (shouldSucceed) {
+              expect(axios.post).toHaveBeenCalled();
+            } else {
+              expect(axios.post).not.toHaveBeenCalled();
+              expect(toast.error).toHaveBeenCalled();
+            }
+          });
+        },
+      );
+    });
+  });
+
   describe("Input type and placeholder attributes", () => {
     it("should have correct input types and placeholders", () => {
+      // Arrange & Act
       const { getByPlaceholderText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -429,6 +729,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       const emailInput = getByPlaceholderText("Enter Your Email");
       const answerInput = getByPlaceholderText("Enter Your Security Answer");
       const newPasswordInput = getByPlaceholderText("Enter Your New Password");
@@ -440,8 +741,9 @@ describe("ForgotPassword Component", () => {
 
   describe("UX Tests", () => {
     it("should disable the reset button while submitting", async () => {
+      // Arrange
       axios.post.mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 500)),
+        () => new Promise((resolve) => setTimeout(resolve({ data: { success: true } }), 500)),
       );
 
       const { getByPlaceholderText, getByText } = render(
@@ -452,6 +754,7 @@ describe("ForgotPassword Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -463,6 +766,8 @@ describe("ForgotPassword Component", () => {
       });
       const resetButton = getByText("RESET PASSWORD");
       fireEvent.click(resetButton);
+
+      // Assert
       expect(resetButton).toBeDisabled();
 
       await waitFor(() => {
@@ -472,6 +777,20 @@ describe("ForgotPassword Component", () => {
       await waitFor(() => {
         expect(resetButton).not.toBeDisabled();
       });
+    });
+  });
+
+  describe("Layout Title", () => {
+    it("should set the document title to 'Forgot Password - Ecommerce App'", () => {
+      render(
+        <MemoryRouter initialEntries={["/forgot-password"]}>
+          <Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+      const layout = document.querySelector("[data-testid='layout-mock']");
+      expect(layout).toHaveAttribute("data-title", "Forgot Password - Ecommerce App");
     });
   });
 });

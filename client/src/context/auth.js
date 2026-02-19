@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { useState, useContext, createContext, useEffect } from "react";
 import axios from "axios";
@@ -20,11 +22,11 @@ const AuthProvider = ({ children }) => {
     if (data) {
       try {
         const parseData = JSON.parse(data);
-        setAuth({
-          ...auth,
+        setAuth((prev) => ({
+          ...prev,
           user: parseData.user,
           token: parseData.token,
-        });
+        }));
       } catch (error) {
         console.error("Error parsing auth data from localStorage:", error);
       }
