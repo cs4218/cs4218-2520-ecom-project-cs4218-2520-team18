@@ -3,15 +3,17 @@ import { render, screen } from "@testing-library/react";
 import UserMenu from "./UserMenu";
 import { MemoryRouter } from "react-router-dom";
 
-describe("UserMenu", () => {
-  describe("Renders correctly", () => {
+describe("UserMenu Component", () => {
+  describe("Rendering", () => {
     it("should render the dashboard header and navigation link", () => {
+      // Arrange & Act
       render(
         <MemoryRouter>
           <UserMenu />
         </MemoryRouter>,
       );
 
+      // Assert
       expect(screen.getByRole("heading", { level: 4 })).toHaveTextContent(
         "Dashboard",
       );
@@ -26,14 +28,16 @@ describe("UserMenu", () => {
     });
   });
 
-  describe("highlights active link", () => {
+  describe("Active Link Highlighting", () => {
     it("should apply active class to the profile link when on profile page", () => {
+      // Arrange & Act
       render(
         <MemoryRouter initialEntries={["/dashboard/user/profile"]}>
           <UserMenu />
         </MemoryRouter>,
       );
 
+      // Assert
       const profileLink = screen.getByRole("link", { name: "Profile" });
       expect(profileLink).toHaveClass("active");
       const ordersLink = screen.getByRole("link", { name: "Orders" });
@@ -41,12 +45,14 @@ describe("UserMenu", () => {
     });
 
     it("should apply active class to the orders link when on orders page", () => {
+      // Arrange & Act
       render(
         <MemoryRouter initialEntries={["/dashboard/user/orders"]}>
           <UserMenu />
         </MemoryRouter>,
       );
 
+      // Assert
       const ordersLink = screen.getByRole("link", { name: "Orders" });
       expect(ordersLink).toHaveClass("active");
       const profileLink = screen.getByRole("link", { name: "Profile" });
@@ -54,12 +60,14 @@ describe("UserMenu", () => {
     });
 
     it("should not apply active class to any link when on a different page", () => {
+      // Arrange & Act
       render(
         <MemoryRouter initialEntries={["/dashboard/user/settings"]}>
           <UserMenu />
         </MemoryRouter>,
       );
 
+      // Assert
       const profileLink = screen.getByRole("link", { name: "Profile" });
       expect(profileLink).not.toHaveClass("active");
       const ordersLink = screen.getByRole("link", { name: "Orders" });

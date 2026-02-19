@@ -20,20 +20,21 @@ jest.mock("../Spinner", () => () => (
   <div data-testid="spinner">Loading...</div>
 ));
 
-describe("Private Route", () => {
+describe("Private Route Unit Tests", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe("when user is authenticated", () => {
     it("renders the private content", async () => {
+      // Arrange
       useAuth.mockReturnValue([
         { user: { name: "Test User" }, token: "test-token" },
         jest.fn(),
       ]);
-
       axios.get.mockResolvedValue({ data: { ok: true } });
 
+      // Act
       render(
         <MemoryRouter>
           <Routes>
@@ -44,6 +45,7 @@ describe("Private Route", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
       });
@@ -58,9 +60,11 @@ describe("Private Route", () => {
 
   describe("when user is not authenticated", () => {
     it("should not call the API and block access if no token exists", async () => {
+      // Arrange
       useAuth.mockReturnValue([{}, jest.fn()]);
       axios.get.mockResolvedValue({ data: { ok: false } });
 
+      // Act
       render(
         <MemoryRouter>
           <Routes>
@@ -71,6 +75,7 @@ describe("Private Route", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("spinner")).toBeInTheDocument();
       });
@@ -83,12 +88,14 @@ describe("Private Route", () => {
 
   describe("when token exists but is invalid (Server rejects)", () => {
     it("should call API but block access to private route", async () => {
+      // Arrange
       useAuth.mockReturnValue([
         { user: { name: "Test User" }, token: "expired-token" },
         jest.fn(),
       ]);
       axios.get.mockResolvedValue({ data: { ok: false } });
 
+      // Act
       render(
         <MemoryRouter>
           <Routes>
@@ -99,6 +106,7 @@ describe("Private Route", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
       });
@@ -112,12 +120,14 @@ describe("Private Route", () => {
 
   describe("Error handling", () => {
     it("should handle API errors gracefully", async () => {
+      // Arrange
       useAuth.mockReturnValue([
         { user: { name: "Test User" }, token: "test-token" },
         jest.fn(),
       ]);
       axios.get.mockRejectedValue(new Error("Network Error"));
 
+      // Act
       render(
         <MemoryRouter>
           <Routes>
@@ -128,20 +138,24 @@ describe("Private Route", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("spinner")).toBeInTheDocument();
         expect(screen.queryByTestId("private-content")).not.toBeInTheDocument();
       });
     });
   });
+
   describe("Whitespace handling", () => {
     it("should treat empty string token as no token", async () => {
+      // Arrange
       useAuth.mockReturnValue([
         { user: { name: "Test User" }, token: "" },
         jest.fn(),
       ]);
       axios.get.mockResolvedValue({ data: { ok: false } });
 
+      // Act
       render(
         <MemoryRouter>
           <Routes>
@@ -152,6 +166,7 @@ describe("Private Route", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       await waitFor(() => {
         expect(screen.getByTestId("spinner")).toBeInTheDocument();
         expect(screen.queryByTestId("private-content")).not.toBeInTheDocument();
