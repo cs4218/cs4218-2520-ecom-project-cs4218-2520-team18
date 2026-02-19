@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 export const isEmpty = (value) => {
   return value === undefined || value === null || String(value).trim() === "";
 };
@@ -38,8 +40,11 @@ export const isValidDOBStrict = (dob) => {
 export const isDOBNotFuture = (dob) => {
   // Empty DOB should be treated as invalid (DOB is required)
   if (isEmpty(dob)) return false;
-  const dobDate = new Date(dob);
+  // Parse date string as YYYY-MM-DD in local timezone
+  const [year, month, day] = dob.split("-").map(Number);
+  const dobDate = new Date(year, month - 1, day);
   const now = new Date();
+  // Compare dates at midnight
   dobDate.setHours(0, 0, 0, 0);
   now.setHours(0, 0, 0, 0);
   return dobDate < now;

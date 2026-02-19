@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import JWT from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
@@ -6,15 +8,15 @@ export const requireSignIn = async (req, res, next) => {
     try {
         // Check if authorization header is present
         const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader === "Bearer") {
+        if (!authHeader || authHeader.toLowerCase() === "bearer") {
             return res.status(401).send({
                 success: false,
                 message: "Authorization header is invalid",
             });
         }
 
-        // Extract token, handles "Bearer <token>" and just "<token>"
-        const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+        // Extract token, handles "Bearer <token>" and just "<token>" (case-insensitive)
+        const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.split(" ")[1] : authHeader;
         const decode = JWT.verify(token, process.env.JWT_SECRET);
         req.user = decode;
         next();

@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import {
   isEmpty,
   isValidEmail,
@@ -10,125 +12,230 @@ import {
 
 describe("Client-side validation helpers", () => {
   describe("isEmpty", () => {
-    it("should return true for empty, null, undefined or whitespace", () => {
-      expect(isEmpty("")).toBe(true);
-      expect(isEmpty("   ")).toBe(true);
-      expect(isEmpty(null)).toBe(true);
-      expect(isEmpty(undefined)).toBe(true);
+    describe("EP - Empty/Falsy Values", () => {
+      test.each([
+        ["", true, "Empty string"],
+        ["   ", true, "Whitespace"],
+        [null, true, "Null"],
+        [undefined, true, "Undefined"],
+      ])("should return true for %p (%s)", (value, expected, _description) => {
+        // Arrange & Act
+        const result = isEmpty(value);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for non-empty values", () => {
-      expect(isEmpty("a")).toBe(false);
-      expect(isEmpty(0)).toBe(false);
-      expect(isEmpty(false)).toBe(false);
+    describe("EP - Non-empty Values", () => {
+      test.each([
+        ["a", false, "Non-empty string"],
+        [0, false, "Zero"],
+        [false, false, "Boolean false"],
+      ])("should return false for %p (%s)", (value, expected, _description) => {
+        // Arrange & Act
+        const result = isEmpty(value);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 
   describe("isValidEmail", () => {
-    it("should return true for valid emails", () => {
-      expect(isValidEmail("valid@example.com")).toBe(true);
-      expect(isValidEmail("user.name+tag@sub.domain.co")).toBe(true);
+    describe("EP - Valid Emails", () => {
+      test.each([
+        ["valid@example.com", true, "Valid"],
+        ["test@mail.example.co.uk", true, "Valid subdomain"],
+        ["test.user+123@example.com", true, "Valid special chars"],
+      ])("should return true for %p (%s)", (email, expected, _description) => {
+        // Arrange & Act
+        const result = isValidEmail(email);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for invalid emails", () => {
-      expect(isValidEmail("plainaddress")).toBe(false);
-      expect(isValidEmail("@missingusername.com")).toBe(false);
-      expect(isValidEmail("username@.com")).toBe(false);
-      expect(isValidEmail("username@com")).toBe(false);
-      expect(isValidEmail("username@domain..com")).toBe(false);
-      expect(isValidEmail("#$%^&*()@example.com")).toBe(false);
-      expect(isValidEmail("Joe Smith <email@example.com>")).toBe(false);
-      expect(isValidEmail("email@example@example.com")).toBe(false);
-      expect(isValidEmail("email@example.com (email)")).toBe(false);
+    describe("EP - Invalid Emails", () => {
+      test.each([
+        ["plainaddress", false, "Missing @"],
+        ["@missingusername.com", false, "Missing local part"],
+        ["username@.com", false, "Missing domain"],
+        ["username@com", false, "Missing TLD"],
+        ["username@domain..com", false, "Double dots"],
+        ["#$%^&*()@example.com", false, "Invalid characters"],
+        ["Joe Smith <email@example.com>", false, "Name with email"],
+        ["email@example@example.com", false, "Multiple @"],
+        ["email@example.com (email)", false, "Email with comment"],
+      ])("should return false for %p (%s)", (email, expected, _description) => {
+        // Arrange & Act
+        const result = isValidEmail(email);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for empty/null/undefined", () => {
-      expect(isValidEmail("")).toBe(false);
-      expect(isValidEmail(null)).toBe(false);
-      expect(isValidEmail(undefined)).toBe(false);
+    describe("BVA - Empty/Null/Undefined", () => {
+      test.each([
+        ["", false, "Empty string"],
+        [null, false, "Null"],
+        [undefined, false, "Undefined"],
+      ])("should return false for %p (%s)", (email, expected, _description) => {
+        // Arrange & Act
+        const result = isValidEmail(email);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 
   describe("isValidPhone", () => {
-    it("should return true for E.164-like numbers with or without leading +", () => {
-      expect(isValidPhone("+14155552671")).toBe(true);
-      expect(isValidPhone("14155552671")).toBe(true);
+    describe("EP - Valid Phone Numbers", () => {
+      test.each([
+        ["+14155552671", true, "E.164 format with +"],
+        ["14155552671", true, "E.164 format without +"],
+      ])("should return true for %p (%s)", (phone, expected, _description) => {
+        // Arrange & Act
+        const result = isValidPhone(phone);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for invalid phone numbers", () => {
-      expect(isValidPhone("+")).toBe(false);
-      expect(isValidPhone("+012345678")).toBe(false);
+    describe("EP - Invalid Phone Numbers", () => {
+      test.each([
+        ["+", false, "Plus sign only"],
+        ["+012345678", false, "Invalid format"],
+      ])("should return false for %p (%s)", (phone, expected, _description) => {
+        // Arrange & Act
+        const result = isValidPhone(phone);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return true for minimum valid length (2 digits)", () => {
-      expect(isValidPhone("+12")).toBe(true);
-      expect(isValidPhone("12")).toBe(true);
+    describe("BVA - Boundary Values (Length)", () => {
+      test.each([
+        ["+12", true, "At minimum (2 digits)"],
+        ["12", true, "At minimum without + (2 digits)"],
+        ["123", true, "Above minimum (3 digits)"],
+        ["+123", true, "Above minimum with + (3 digits)"],
+        ["1", false, "Below minimum (1 digit)"],
+        ["+1", false, "Below minimum with + (1 digit)"],
+        ["2".repeat(14), true, "At maximum (14 digits)"],
+        ["+" + "2".repeat(14), true, "At maximum with + (14 digits)"],
+        ["1" + "2".repeat(14), true, "Exactly 15 digits"],
+        ["+" + "1" + "2".repeat(14), true, "Exactly 15 digits with +"],
+        ["1" + "2".repeat(15), false, "Over maximum (16 digits)"],
+        ["+" + "1" + "2".repeat(15), false, "Over maximum with + (16 digits)"],
+      ])("should validate %p correctly (%s)", (phone, expected, _description) => {
+        // Arrange & Act
+        const result = isValidPhone(phone);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return true for length > 2 (3 digit)", () => {
-      expect(isValidPhone("123")).toBe(true);
-      expect(isValidPhone("+123")).toBe(true);
-    });
+    describe("BVA - Empty/Null", () => {
+      test.each([
+        ["", false, "Empty string"],
+        [null, false, "Null"],
+      ])("should return false for %p (%s)", (phone, expected, _description) => {
+        // Arrange & Act
+        const result = isValidPhone(phone);
 
-    it("should return false for length < 2 (1 digit)", () => {
-      expect(isValidPhone("1")).toBe(false);
-      expect(isValidPhone("+1")).toBe(false);
-    });
-
-    it("should return true for length < 15 (14 digits)", () => {
-      const maxDigits = "2".repeat(14);
-      expect(isValidPhone(maxDigits)).toBe(true);
-      expect(isValidPhone("+" + maxDigits)).toBe(true);
-    });
-
-    it("should return true for maximum valid length (15 digits)", () => {
-      // 1 + 14 digits
-      const maxDigits = "1" + "2".repeat(14);
-      expect(isValidPhone(maxDigits)).toBe(true);
-      expect(isValidPhone("+" + maxDigits)).toBe(true);
-    });
-
-    it("should return false for length > 15 (16 digits)", () => {
-      const tooManyDigits = "1" + "2".repeat(15);
-      expect(isValidPhone(tooManyDigits)).toBe(false);
-      expect(isValidPhone("+" + tooManyDigits)).toBe(false);
-    });
-
-    it("should return false for empty/null/undefined", () => {
-      expect(isValidPhone("")).toBe(false);
-      expect(isValidPhone(null)).toBe(false);
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 
   describe("isPasswordLongEnough", () => {
-    it("should return true for length >= min (BVA)", () => {
-      expect(isPasswordLongEnough("123456")).toBe(true);
-      expect(isPasswordLongEnough("1234567")).toBe(true);
+    describe("EP - Valid Passwords", () => {
+      test.each([
+        ["123456", true, "Exactly minimum length"],
+        ["1234567", true, "Above minimum length"],
+      ])("should return true for %p (%s)", (password, expected, _description) => {
+        // Arrange & Act
+        const result = isPasswordLongEnough(password);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for shorter passwords and empty string", () => {
-      expect(isPasswordLongEnough("12345")).toBe(false);
-      expect(isPasswordLongEnough("")).toBe(false);
+    describe("BVA - Boundary Values", () => {
+      test.each([
+        ["12345", false, "Below minimum (5 chars)"],
+        ["", false, "Empty string"],
+      ])("should return false for %p (%s)", (password, expected, _description) => {
+        // Arrange & Act
+        const result = isPasswordLongEnough(password);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 
   describe("isValidDOBFormat and isValidDOBStrict", () => {
-    it("should return true for YYYY-MM-DD formatted strings", () => {
-      expect(isValidDOBFormat("1990-01-01")).toBe(true);
-      expect(isValidDOBFormat("2023-12-31")).toBe(true);
+    describe("EP - Valid YYYY-MM-DD Format", () => {
+      test.each([
+        ["1990-01-01", true, "Valid date 1990"],
+        ["2023-12-31", true, "Valid date 2023"],
+      ])("isValidDOBFormat should return true for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isValidDOBFormat(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for malformed date strings", () => {
-      expect(isValidDOBFormat("01-01-2023")).toBe(false);
-      expect(isValidDOBFormat("2023/01/01")).toBe(false);
-      expect(isValidDOBFormat(" 2023-01-01 ")).toBe(false);
+    describe("EP - Invalid Format", () => {
+      test.each([
+        ["01-01-2023", false, "Reversed format"],
+        ["2023/01/01", false, "Slash separator"],
+        [" 2023-01-01 ", false, "Leading/trailing spaces"],
+      ])("isValidDOBFormat should return false for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isValidDOBFormat(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for non-existent calendar dates even if format is correct", () => {
-      expect(isValidDOBStrict("2021-02-28")).toBe(true);
-      expect(isValidDOBStrict("2021-02-30")).toBe(false);
-      expect(isValidDOBStrict("2023-04-31")).toBe(false);
-      expect(isValidDOBStrict(" 2023-01-01 ")).toBe(false);
+    describe("EP - Valid Calendar Dates (Strict)", () => {
+      test.each([
+        ["2021-02-28", true, "Valid February in non-leap year"],
+      ])("isValidDOBStrict should return true for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isValidDOBStrict(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
+    });
+
+    describe("BVA - Invalid Calendar Dates (Strict)", () => {
+      test.each([
+        ["2021-02-30", false, "February 30th doesn't exist"],
+        ["2023-04-31", false, "April 31st doesn't exist"],
+        [" 2023-01-01 ", false, "Leading/trailing spaces"],
+      ])("isValidDOBStrict should return false for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isValidDOBStrict(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 
@@ -141,27 +248,53 @@ describe("Client-side validation helpers", () => {
       jest.useRealTimers();
     });
 
-    it("should return true for past dates and today", () => {
-      expect(isDOBNotFuture("2023-06-14")).toBe(true);
-      expect(isDOBNotFuture("2000-01-01")).toBe(true);
+    describe("EP - Past and Current Dates", () => {
+      test.each([
+        ["2023-06-14", true, "Yesterday"],
+        ["2000-01-01", true, "Past date"],
+      ])("should return true for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isDOBNotFuture(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for future dates and invalid strings", () => {
-      expect(isDOBNotFuture("2023-06-16")).toBe(false);
-      expect(isDOBNotFuture("invalid-date")).toBe(false);
+    describe("EP - Future Dates", () => {
+      test.each([
+        ["2023-06-16", false, "Tomorrow"],
+      ])("should return false for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isDOBNotFuture(dob);
+
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
 
-    it("should return false for today (implementation uses < not <= when comparing with new Date())", () => {
-      expect(isDOBNotFuture("2023-06-15")).toBe(false);
+    describe("BVA - Today's Date", () => {
+      it("should return false for today (uses < not <=)", () => {
+        // Arrange & Act
+        const result = isDOBNotFuture("2023-06-15");
+
+        // Assert
+        expect(result).toBe(false);
+      });
     });
 
-    it("should handle invalid date string gracefully (Date comparison behavior)", () => {
-      expect(isDOBNotFuture("invalid-date")).toBe(false);
-    });
+    describe("BVA - Invalid/Edge Cases", () => {
+      test.each([
+        ["invalid-date", false, "Invalid date string"],
+        ["", false, "Empty string"],
+        [null, false, "Null"],
+      ])("should return false for %p (%s)", (dob, expected, _description) => {
+        // Arrange & Act
+        const result = isDOBNotFuture(dob);
 
-    it("returns false for empty/blank DOB (DOB is required)", () => {
-      expect(isDOBNotFuture("")).toBe(false);
-      expect(isDOBNotFuture(null)).toBe(false);
+        // Assert
+        expect(result).toBe(expected);
+      });
     });
   });
 });

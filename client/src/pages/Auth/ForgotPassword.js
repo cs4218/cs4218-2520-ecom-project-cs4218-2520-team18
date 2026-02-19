@@ -1,9 +1,12 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { useState } from "react";
 import Layout from "./../../components/Layout";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { isValidEmail, isPasswordLongEnough } from "../../helpers/validation";
 import "../../styles/AuthStyles.css";
 
 const ForgotPassword = () => {
@@ -29,8 +32,7 @@ const ForgotPassword = () => {
       return;
     }
 
-    const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;;
-    if (!emailRegex.test(payload.email)) {
+    if (!isValidEmail(payload.email)) {
       toast.error("Invalid email format");
       return;
     }
@@ -45,7 +47,7 @@ const ForgotPassword = () => {
       return;
     }
 
-    if (payload.newPassword.length < 6) {
+    if (!isPasswordLongEnough(payload.newPassword)) {
       toast.error("New password must be at least 6 characters long");
       return;
     }

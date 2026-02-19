@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React, { useState, useEffect } from "react";
 import UserMenu from "../../components/UserMenu";
 import Layout from "./../../components/Layout";
@@ -6,6 +8,7 @@ import toast from "react-hot-toast";
 import {
   isValidPhone,
   isValidDOBFormat,
+  isValidDOBStrict,
   isDOBNotFuture,
   isPasswordLongEnough,
 } from "../../helpers/validation";
@@ -20,15 +23,16 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [DOB, setDOB] = useState("");
+  const [loading, setLoading] = useState(false);
 
   //get user data
   useEffect(() => {
     const { email, name, phone, address, DOB } = auth?.user || {};
-    setName(name);
-    setPhone(phone);
-    setEmail(email);
-    setAddress(address);
-    setDOB(DOB);
+    setName(name || "");
+    setPhone(phone || "");
+    setEmail(email || "");
+    setAddress(address || "");
+    setDOB(DOB || "");
   }, [auth?.user]);
 
   // form function
@@ -45,8 +49,8 @@ const Profile = () => {
       };
 
       // client-side validation
-      if (!payload.name) {
-        toast.error("Name is required");
+      if (!payload.name || payload.name.length > 100) {
+        toast.error('Name should be 1 to 100 characters');
         return;
       }
 
@@ -55,12 +59,18 @@ const Profile = () => {
         return;
       }
 
+
+
       if (!isValidPhone(payload.phone)) {
         toast.error("Phone number must be in E.164 format");
         return;
       }
 
       if (!isValidDOBFormat(DOB)) {
+        toast.error("Date of Birth must be in YYYY-MM-DD format");
+        return;
+      }
+      if (!isValidDOBStrict(DOB)) {
         toast.error("Date of Birth must be in YYYY-MM-DD format");
         return;
       }
@@ -79,12 +89,14 @@ const Profile = () => {
         return;
       }
 
+      setLoading(true);
       const { data } = await axios.put("/api/v1/auth/profile", payload);
       // If the API indicates failure { success: false, message }
       // or includes an `error` field show the message and stop.
       if (data?.success === false || data?.error) {
         const msg = data?.error || data?.message || "Profile Update Failed";
         toast.error(msg);
+        setLoading(false);
         return;
       }
       setAuth({ ...auth, user: data?.updatedUser });
@@ -93,9 +105,11 @@ const Profile = () => {
       ls.user = data.updatedUser;
       localStorage.setItem("auth", JSON.stringify(ls));
       toast.success("Profile Updated Successfully");
+      setLoading(false);
     } catch (error) {
       console.error(error);
       toast.error("Profile Update Failed");
+      setLoading(false);
     }
   };
   return (
@@ -171,7 +185,7 @@ const Profile = () => {
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" disabled={loading}>
                   UPDATE
                 </button>
               </form>
