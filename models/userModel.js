@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import mongoose from "mongoose";
 import { validateDOB, validateEmail, validatePassword, validatePhoneE164, validateDOBNotFuture } from "../helpers/validationHelper.js";
 
