@@ -6,9 +6,12 @@ import Profile from "./Profile";
 import { useAuth } from "../../context/auth";
 import axios from "axios";
 import toast from "react-hot-toast";
+import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
 jest.mock("react-hot-toast");
+
+jest.mock("../../helpers/validation");
 
 jest.mock("../../components/Layout", () => ({ children, title }) => (
   <div data-testid="layout" title={title}>
@@ -65,6 +68,12 @@ describe("Profile Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.clear();
+    // Mock validation helpers to pass by default
+    validationHelpers.isValidPhone.mockReturnValue(true);
+    validationHelpers.isValidDOBFormat.mockReturnValue(true);
+    validationHelpers.isValidDOBStrict.mockReturnValue(true);
+    validationHelpers.isDOBNotFuture.mockReturnValue(true);
+    validationHelpers.isPasswordLongEnough.mockReturnValue(true);
   });
 
   describe("Rendering", () => {
@@ -284,9 +293,202 @@ describe("Profile Component", () => {
     });
   });
 
+  describe("Validation - Mocked Helpers", () => {
+    describe("Phone Validation Helper", () => {
+      it("should show error when isValidPhone returns false", async () => {
+        // Arrange
+        setupUser();
+        validationHelpers.isValidPhone.mockReturnValue(false);
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(toast.error).toHaveBeenCalled();
+          expect(axios.put).not.toHaveBeenCalled();
+        });
+      });
+
+      it("should proceed to API call when isValidPhone returns true", async () => {
+        // Arrange
+        const { mockUser } = setupUser();
+        localStorageMock.getItem.mockReturnValue(
+          JSON.stringify({ user: mockUser, token: "test-token" }),
+        );
+        const updatedUser = { ...mockUser };
+        axios.put.mockResolvedValue({ data: { updatedUser } });
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(axios.put).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("DOB Format Validation Helper", () => {
+      it("should show error when isValidDOBFormat returns false", async () => {
+        // Arrange
+        setupUser();
+        validationHelpers.isValidDOBFormat.mockReturnValue(false);
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(toast.error).toHaveBeenCalled();
+          expect(axios.put).not.toHaveBeenCalled();
+        });
+      });
+
+      it("should proceed to API call when isValidDOBFormat returns true", async () => {
+        // Arrange
+        const { mockUser } = setupUser();
+        localStorageMock.getItem.mockReturnValue(
+          JSON.stringify({ user: mockUser, token: "test-token" }),
+        );
+        const updatedUser = { ...mockUser };
+        axios.put.mockResolvedValue({ data: { updatedUser } });
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(axios.put).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("DOB Strict Validation Helper", () => {
+      it("should show error when isValidDOBStrict returns false", async () => {
+        // Arrange
+        setupUser();
+        validationHelpers.isValidDOBStrict.mockReturnValue(false);
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(toast.error).toHaveBeenCalled();
+          expect(axios.put).not.toHaveBeenCalled();
+        });
+      });
+
+      it("should proceed to API call when isValidDOBStrict returns true", async () => {
+        // Arrange
+        const { mockUser } = setupUser();
+        localStorageMock.getItem.mockReturnValue(
+          JSON.stringify({ user: mockUser, token: "test-token" }),
+        );
+        const updatedUser = { ...mockUser };
+        axios.put.mockResolvedValue({ data: { updatedUser } });
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(axios.put).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("DOB Future Date Validation Helper", () => {
+      it("should show error when isDOBNotFuture returns false", async () => {
+        // Arrange
+        setupUser();
+        validationHelpers.isDOBNotFuture.mockReturnValue(false);
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(toast.error).toHaveBeenCalled();
+          expect(axios.put).not.toHaveBeenCalled();
+        });
+      });
+
+      it("should proceed to API call when isDOBNotFuture returns true", async () => {
+        // Arrange
+        const { mockUser } = setupUser();
+        localStorageMock.getItem.mockReturnValue(
+          JSON.stringify({ user: mockUser, token: "test-token" }),
+        );
+        const updatedUser = { ...mockUser };
+        axios.put.mockResolvedValue({ data: { updatedUser } });
+        render(<Profile />);
+
+        // Act
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(axios.put).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("Password Length Validation Helper", () => {
+      it("should show error when isPasswordLongEnough returns false", async () => {
+        // Arrange
+        setupUser();
+        validationHelpers.isPasswordLongEnough.mockReturnValue(false);
+        render(<Profile />);
+
+        // Act
+        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+          target: { value: "short" },
+        });
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(toast.error).toHaveBeenCalled();
+          expect(axios.put).not.toHaveBeenCalled();
+        });
+      });
+
+      it("should proceed to API call when isPasswordLongEnough returns true", async () => {
+        // Arrange
+        const { mockUser } = setupUser();
+        localStorageMock.getItem.mockReturnValue(
+          JSON.stringify({ user: mockUser, token: "test-token" }),
+        );
+        const updatedUser = { ...mockUser };
+        axios.put.mockResolvedValue({ data: { updatedUser } });
+        render(<Profile />);
+
+        // Act
+        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+          target: { value: "validPassword" },
+        });
+        fireEvent.click(screen.getByText(/update/i));
+
+        // Assert
+        await waitFor(() => {
+          expect(axios.put).toHaveBeenCalled();
+        });
+      });
+    });
+  });
+
   describe("Input Validation - EP & BVA", () => {
     describe("Name Validation", () => {
-      it("should not allow empty name", async () => {
+      it("should show error when name is empty", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -303,7 +505,7 @@ describe("Profile Component", () => {
         });
       });
 
-      it("should allow valid name", async () => {
+      it("should not show error when name is valid", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -316,11 +518,11 @@ describe("Profile Component", () => {
 
         // Assert
         await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith("Name is required");
+          expect(toast.error).not.toHaveBeenCalledWith("Name should be 1 to 100 characters");
         });
       });
 
-      it("should not allow whitespace-only name (BVA/EP)", async () => {
+      it("should show error when name is whitespace-only", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -350,11 +552,11 @@ describe("Profile Component", () => {
 
         // Assert
         await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith("Name is required");
+          expect(toast.error).not.toHaveBeenCalledWith("Name should be 1 to 100 characters");
         });
       });
 
-      it("should NOT allow name exceeding 100 characters (BVA upper boundary)", async () => {
+      it("should show error when name exceeds 100 characters (BVA upper boundary)", async () => {
         // Arrange
         setupUser();
         const longName = "A".repeat(101);
@@ -389,95 +591,10 @@ describe("Profile Component", () => {
           expect(toast.error).not.toHaveBeenCalledWith('Name should be 1 to 100 characters');
         });
       });
-
-      it("should allow less than 100 character name (BVA upper boundary inclusive)", async () => {
-        // Arrange
-        setupUser();
-        const shortName = "A".repeat(99);
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your Name"), {
-          target: { value: shortName },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith('Name should be 1 to 100 characters');
-        });
-      });
     });
 
-    describe("Phone Validation - EP", () => {
-      test.each([
-        ["+6581234567", true, "Valid E.164 with +"],
-        ["6581234567", true, "Valid E.164 without +"],
-        ["81234567", true, "Valid E.164 without +"],
-        ["+65-8123-4567", false, "Invalid - Dashes"],
-        ["+65 ABC 123", false, "Invalid - Alpha characters"],
-        ["+651234567", true, "Valid - Shorter E.164"],
-      ])(
-        "should validate phone %p correctly (%s)",
-        async (phone, shouldSucceed, _description) => {
-          // Arrange
-          setupUser({ phone: "6581234567" });
-          if (shouldSucceed) {
-            axios.put.mockResolvedValue({
-              data: { success: true, updatedUser: {} },
-            });
-          }
-
-          render(<Profile />);
-
-          // Act
-          fireEvent.change(
-            screen.getByPlaceholderText("Enter Your Phone Number"),
-            {
-              target: { value: phone },
-            },
-          );
-          fireEvent.click(screen.getByText(/update/i));
-
-          // Assert
-          await waitFor(() => {
-            if (shouldSucceed) {
-              expect(axios.put).toHaveBeenCalled();
-            } else {
-              expect(axios.put).not.toHaveBeenCalled();
-              expect(toast.error).toHaveBeenCalledWith(
-                "Phone number must be in E.164 format",
-              );
-            }
-          });
-        },
-      );
-    });
-
-    describe("Phone Validation - BVA", () => {
-      it("should not allow invalid phone number", async () => {
-        // Arrange
-        setupUser();
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(
-          screen.getByPlaceholderText("Enter Your Phone Number"),
-          {
-            target: { value: "invalid-phone" },
-          },
-        );
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).toHaveBeenCalledWith(
-            "Phone number must be in E.164 format",
-          );
-        });
-      });
-
-      it("should not allow empty phone number", async () => {
+    describe("Phone Validation", () => {
+      it("should show error when phone is empty", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -496,55 +613,49 @@ describe("Profile Component", () => {
           expect(toast.error).toHaveBeenCalledWith("Phone number is required");
         });
       });
-    });
 
-    describe("DOB Validation - EP & BVA", () => {
-      it("should not allow invalid date of birth", async () => {
+      it("should not show error when phone is valid", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
 
-        const dobInput = screen.getByPlaceholderText("Enter Your DOB");
-        dobInput.setAttribute("type", "text");
-
         // Act
-        fireEvent.change(dobInput, {
-          target: { value: "invalid-dob" },
-        });
+        fireEvent.change(
+          screen.getByPlaceholderText("Enter Your Phone Number"),
+          {
+            target: { value: "6581234567" },
+          },
+        );
         fireEvent.click(screen.getByText(/update/i));
 
         // Assert
         await waitFor(() => {
-          expect(toast.error).toHaveBeenCalledWith(
-            "Date of Birth must be in YYYY-MM-DD format",
-          );
+          expect(toast.error).not.toHaveBeenCalledWith("Phone number is required");
         });
       });
+    });
 
-      it("should not allow future date of birth", async () => {
+    describe("DOB Validation", () => {
+      it("should show error when DOB is empty", async () => {
         // Arrange
         setupUser();
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 1);
-        const futureDateString = futureDate.getFullYear() + "-" + String(futureDate.getMonth() + 1).padStart(2, "0") + "-" + String(futureDate.getDate()).padStart(2, "0");
-
         render(<Profile />);
 
         // Act
         fireEvent.change(screen.getByPlaceholderText("Enter Your DOB"), {
-          target: { value: futureDateString },
+          target: { value: "" },
         });
         fireEvent.click(screen.getByText(/update/i));
 
         // Assert
         await waitFor(() => {
           expect(toast.error).toHaveBeenCalledWith(
-            "Date of Birth cannot be in the future",
+            "Date of Birth is required",
           );
         });
       });
 
-      it("should allow valid date of birth", async () => {
+      it("should not show error when DOB is valid", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -558,139 +669,14 @@ describe("Profile Component", () => {
         // Assert
         await waitFor(() => {
           expect(toast.error).not.toHaveBeenCalledWith(
-            "Date of Birth must be in YYYY-MM-DD format",
-          );
-        });
-      });
-
-      // BVA: Today's date boundary
-      it("should NOT allow today's date as DOB (BVA boundary)", async () => {
-        // Arrange
-        setupUser();
-        const today = new Date();
-        const todayString = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
-
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your DOB"), {
-          target: { value: todayString },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).toHaveBeenCalledWith(
-            "Date of Birth cannot be in the future",
-          );
-        });
-      });
-
-      it("should allow yesterday's date as DOB (BVA boundary)", async () => {
-        // Arrange
-        setupUser();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayString = yesterday.getFullYear() + "-" + String(yesterday.getMonth() + 1).padStart(2, "0") + "-" + String(yesterday.getDate()).padStart(2, "0");
-
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your DOB"), {
-          target: { value: yesterdayString },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith(
-            "Date of Birth cannot be in the future",
-          );
-        });
-      });
-
-      it("should not allow invalid calendar dates like Feb 30 (BVA)", async () => {
-        // Arrange
-        setupUser();
-        render(<Profile />);
-
-        const dobInput = screen.getByPlaceholderText("Enter Your DOB");
-        dobInput.setAttribute("type", "text");
-
-        // Act
-        fireEvent.change(dobInput, {
-          target: { value: "2020-02-30" },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).toHaveBeenCalledWith(
-            "Date of Birth must be in YYYY-MM-DD format",
+            "Date of Birth is required",
           );
         });
       });
     });
 
-    describe("Password Validation - EP & BVA", () => {
-      it("should not allow password less than 6 characters", async () => {
-        // Arrange
-        setupUser();
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
-          target: { value: "12345" },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).toHaveBeenCalledWith(
-            "Password must be at least 6 characters",
-          );
-        });
-      });
-
-      it("should allow password with exactly 6 characters (BVA lower boundary)", async () => {
-        // Arrange
-        setupUser();
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
-          target: { value: "123456" },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith(
-            "Password must be at least 6 characters",
-          );
-        });
-      });
-
-      it("should allow password with more than 6 characters", async () => {
-        // Arrange
-        setupUser();
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
-          target: { value: "1234567" },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith(
-            "Password must be at least 6 characters",
-          );
-        });
-      });
-
-      it("should allow empty password (no change)", async () => {
+    describe("Password Validation", () => {
+      it("should not show error when password is empty (no change)", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -731,31 +717,10 @@ describe("Profile Component", () => {
           });
         });
       });
-
-      // BVA: Very long password (Max boundary - assuming 1000 char limit as extreme)
-      it("should allow very long password (BVA upper boundary)", async () => {
-        // Arrange
-        setupUser();
-        const longPassword = "a".repeat(500);
-        render(<Profile />);
-
-        // Act
-        fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
-          target: { value: longPassword },
-        });
-        fireEvent.click(screen.getByText(/update/i));
-
-        // Assert
-        await waitFor(() => {
-          expect(toast.error).not.toHaveBeenCalledWith(
-            "Password must be at least 6 characters",
-          );
-        });
-      });
     });
 
     describe("Address Validation", () => {
-      it("should not allow empty address", async () => {
+      it("should show error when address is empty", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -772,7 +737,7 @@ describe("Profile Component", () => {
         });
       });
 
-      it("should allow valid address", async () => {
+      it("should not show error when address is valid", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -789,8 +754,7 @@ describe("Profile Component", () => {
         });
       });
 
-      // BVA/EP: Whitespace-only address (after trim becomes empty)
-      it("should not allow whitespace-only address (BVA/EP)", async () => {
+      it("should show error when address is whitespace-only", async () => {
         // Arrange
         setupUser();
         render(<Profile />);
@@ -807,7 +771,6 @@ describe("Profile Component", () => {
         });
       });
 
-      // BVA: Single character address
       it("should allow single character address (BVA lower boundary)", async () => {
         // Arrange
         setupUser();
@@ -825,7 +788,6 @@ describe("Profile Component", () => {
         });
       });
 
-      // BVA: Very long address
       it("should allow very long address (BVA upper boundary)", async () => {
         // Arrange
         setupUser();
