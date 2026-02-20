@@ -30,6 +30,7 @@ beforeEach(() => {
     };
 });
 
+// Lim Kok Liang, A0252776U
 describe("createCategoryController", () => {
     let req, res;
 
@@ -117,6 +118,7 @@ describe("createCategoryController", () => {
     });
 });
 
+// Lim Kok Liang, A0252776U
 describe("updateCategoryController", () => {
     let req, res;
 
@@ -317,6 +319,7 @@ describe("updateCategoryController", () => {
     });
 });
 
+// Lim Kok Liang, A0252776U
 describe("deleteCategoryController", () => {
     let req, res;
 
