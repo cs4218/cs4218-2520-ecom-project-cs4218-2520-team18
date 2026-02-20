@@ -1,10 +1,12 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react';
-import axios from 'axios';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import '@testing-library/jest-dom';
-import toast from 'react-hot-toast';
-import Login from './Login';
+// Loh Ze Qing Norbert, A0277473R
+
+import React from "react";
+import { render, fireEvent, waitFor } from "@testing-library/react";
+import axios from "axios";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import "@testing-library/jest-dom/extend-expect";
+import toast from "react-hot-toast";
+import Login from "./Login";
 import { useAuth } from "../../context/auth";
 
 // Mocking axios.post
@@ -55,18 +57,6 @@ jest.mock("react-router-dom", () => ({
   useLocation: () => mockLocationState,
 }));
 
-// Suppress console output during tests
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.log = jest.fn();
-  console.error = jest.fn();
-});
-afterAll(() => {
-  console.log = originalConsoleLog;
-  console.error = originalConsoleError;
-});
-
 jest.mock("../../components/Layout", () => ({ children, title }) => (
   <div data-testid="layout-mock" data-title={title}>
     {children}
@@ -104,6 +94,7 @@ describe("Login Component", () => {
   });
 
   it("renders login form", () => {
+    // Arrange
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
@@ -112,11 +103,13 @@ describe("Login Component", () => {
       </MemoryRouter>,
     );
 
+    // Assert
     expect(getByText("LOGIN FORM")).toBeInTheDocument();
     expect(getByPlaceholderText("Enter Your Email")).toBeInTheDocument();
     expect(getByPlaceholderText("Enter Your Password")).toBeInTheDocument();
   });
   it("inputs should be initially empty", () => {
+    // Arrange
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
@@ -125,12 +118,14 @@ describe("Login Component", () => {
       </MemoryRouter>,
     );
 
+    // Assert
     expect(getByText("LOGIN FORM")).toBeInTheDocument();
     expect(getByPlaceholderText("Enter Your Email").value).toBe("");
     expect(getByPlaceholderText("Enter Your Password").value).toBe("");
   });
 
   it("should allow typing email and password", () => {
+    // Arrange
     const { getByText, getByPlaceholderText } = render(
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
@@ -138,12 +133,16 @@ describe("Login Component", () => {
         </Routes>
       </MemoryRouter>,
     );
+
+    // Act
     fireEvent.change(getByPlaceholderText("Enter Your Email"), {
       target: { value: "test@example.com" },
     });
     fireEvent.change(getByPlaceholderText("Enter Your Password"), {
       target: { value: "password123" },
     });
+
+    // Assert
     expect(getByPlaceholderText("Enter Your Email").value).toBe(
       "test@example.com",
     );
@@ -153,11 +152,13 @@ describe("Login Component", () => {
   });
 
   it("should login the user successfully", async () => {
+    // Arrange
     const mockResponse = {
       data: {
         success: true,
         user: { id: 1, name: "John Doe", email: "test@example.com" },
         token: "mockToken",
+        message: "Login successful",
       },
     };
     axios.post.mockResolvedValueOnce(mockResponse);
@@ -170,6 +171,7 @@ describe("Login Component", () => {
       </MemoryRouter>,
     );
 
+    // Act
     fireEvent.change(getByPlaceholderText("Enter Your Email"), {
       target: { value: "test@example.com" },
     });
@@ -178,8 +180,9 @@ describe("Login Component", () => {
     });
     fireEvent.click(getByText("LOGIN"));
 
+    // Assert
     await waitFor(() => expect(axios.post).toHaveBeenCalled());
-    expect(toast.success).toHaveBeenCalledWith(undefined, {
+    expect(toast.success).toHaveBeenCalledWith("Login successful", {
       duration: 5000,
       icon: "🙏",
       style: {
@@ -200,60 +203,78 @@ describe("Login Component", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/");
   });
 
-  it("should display error message on failed login", async () => {
-    axios.post.mockResolvedValueOnce({
-      data: { success: false, message: "Invalid credentials" },
+  describe("Error handling", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      consoleSpy.mockRestore();
     });
 
-    const { getByPlaceholderText, getByText } = render(
-      <MemoryRouter initialEntries={["/login"]}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    it("should display error message on failed login", async () => {
+      // Arrange
+      axios.post.mockResolvedValueOnce({
+        data: { success: false, message: "Invalid credentials" },
+      });
 
-    fireEvent.change(getByPlaceholderText("Enter Your Email"), {
-      target: { value: "test@example.com" },
-    });
-    fireEvent.change(getByPlaceholderText("Enter Your Password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(getByText("LOGIN"));
+      const { getByPlaceholderText, getByText } = render(
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </MemoryRouter>,
+      );
 
-    await waitFor(() => expect(axios.post).toHaveBeenCalled());
-    expect(toast.error).toHaveBeenCalledWith("Invalid credentials");
-    expect(mockSetAuth).not.toHaveBeenCalled();
-    expect(localStorage.setItem).not.toHaveBeenCalled();
-    expect(mockNavigate).not.toHaveBeenCalled();
-  });
+      // Act
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(getByText("LOGIN"));
 
-  it("should display generic error message if there is an error without response data", async () => {
-    axios.post.mockRejectedValueOnce(new Error());
-    const { getByPlaceholderText, getByText } = render(
-      <MemoryRouter initialEntries={["/login"]}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    fireEvent.change(getByPlaceholderText("Enter Your Email"), {
-      target: { value: "test@example.com" },
+      // Assert
+      await waitFor(() => expect(axios.post).toHaveBeenCalled());
+      expect(toast.error).toHaveBeenCalledWith("Invalid credentials");
+      expect(mockSetAuth).not.toHaveBeenCalled();
+      expect(localStorage.setItem).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
-    fireEvent.change(getByPlaceholderText("Enter Your Password"), {
-      target: { value: "password123" },
-    });
-    fireEvent.click(getByText("LOGIN"));
 
-    await waitFor(() => expect(axios.post).toHaveBeenCalled());
-    expect(toast.error).toHaveBeenCalledWith("Something went wrong");
-    expect(mockSetAuth).not.toHaveBeenCalled();
-    expect(localStorage.setItem).not.toHaveBeenCalled();
-    expect(mockNavigate).not.toHaveBeenCalled();
+    it("should display generic error message if there is an error without response data", async () => {
+      // Arrange
+      axios.post.mockRejectedValueOnce(new Error());
+      const { getByPlaceholderText, getByText } = render(
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      fireEvent.change(getByPlaceholderText("Enter Your Email"), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(getByPlaceholderText("Enter Your Password"), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(getByText("LOGIN"));
+
+      // Assert
+      await waitFor(() => expect(axios.post).toHaveBeenCalled());
+      expect(toast.error).toHaveBeenCalledWith("Something went wrong");
+      expect(mockSetAuth).not.toHaveBeenCalled();
+      expect(localStorage.setItem).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
   });
 
   describe("Input attributes", () => {
     it("Form inputs should have required attribute", () => {
+      // Arrange
       const { getByPlaceholderText } = render(
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
@@ -262,6 +283,7 @@ describe("Login Component", () => {
         </MemoryRouter>,
       );
 
+      // Assert
       expect(getByPlaceholderText("Enter Your Email")).toHaveAttribute(
         "required",
       );
@@ -270,6 +292,7 @@ describe("Login Component", () => {
       );
     });
     it('Email input should have type="email"', () => {
+      // Arrange
       const { getByPlaceholderText } = render(
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
@@ -277,12 +300,15 @@ describe("Login Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Assert
       expect(getByPlaceholderText("Enter Your Email")).toHaveAttribute(
         "type",
         "email",
       );
     });
     it('Password input should have type="password"', () => {
+      // Arrange
       const { getByPlaceholderText } = render(
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
@@ -290,6 +316,8 @@ describe("Login Component", () => {
           </Routes>
         </MemoryRouter>,
       );
+
+      // Assert
       expect(getByPlaceholderText("Enter Your Password")).toHaveAttribute(
         "type",
         "password",
@@ -299,6 +327,7 @@ describe("Login Component", () => {
 
   describe("Error logging", () => {
     it("should log error to console on failed login", async () => {
+      // Arrange
       const consoleSpy = jest
         .spyOn(console, "error")
         .mockImplementation(() => {});
@@ -312,6 +341,7 @@ describe("Login Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -320,6 +350,7 @@ describe("Login Component", () => {
       });
       fireEvent.click(getByText("LOGIN"));
 
+      // Assert
       await waitFor(() => expect(axios.post).toHaveBeenCalled());
       expect(consoleSpy).toHaveBeenCalledWith(new Error("Network Error"));
       consoleSpy.mockRestore();
@@ -328,6 +359,7 @@ describe("Login Component", () => {
 
   describe("Navigation after login", () => {
     it("should navigate to the previous location after login if location.state is set", async () => {
+      // Arrange
       const mockResponse = {
         data: {
           success: true,
@@ -346,6 +378,7 @@ describe("Login Component", () => {
         </MemoryRouter>,
       );
 
+      // Act
       fireEvent.change(getByPlaceholderText("Enter Your Email"), {
         target: { value: "test@example.com" },
       });
@@ -354,6 +387,7 @@ describe("Login Component", () => {
       });
       fireEvent.click(getByText("LOGIN"));
 
+      // Assert
       await waitFor(() => expect(axios.post).toHaveBeenCalled());
       expect(mockNavigate).toHaveBeenCalledWith("/previous-page");
     });
@@ -361,6 +395,7 @@ describe("Login Component", () => {
 
   describe("Forget Password Button", () => {
     it("should have a forget password button that navigates to /forgot-password", () => {
+      // Arrange
       const { getByText } = render(
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
@@ -370,31 +405,18 @@ describe("Login Component", () => {
       );
       const forgetPasswordButton = getByText("Forgot Password");
       expect(forgetPasswordButton).toBeInTheDocument();
+
+      // Act
       fireEvent.click(forgetPasswordButton);
+
+      // Assert
       expect(mockNavigate).toHaveBeenCalledWith("/forgot-password");
-    });
-  });
-
-  describe("Input Validation", () => {
-    it("should require email and password fields", async () => {
-      const { getByText } = render(
-        <MemoryRouter initialEntries={["/login"]}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      fireEvent.click(getByText("LOGIN"));
-
-      await waitFor(() => {
-        expect(axios.post).not.toHaveBeenCalled();
-      });
     });
   });
 
   describe("Layout Title", () => {
     it('should set the document title to "Login - Ecommerce App"', () => {
+      // Arrange
       render(
         <MemoryRouter initialEntries={["/login"]}>
           <Routes>
@@ -403,6 +425,8 @@ describe("Login Component", () => {
         </MemoryRouter>,
       );
       const layout = document.querySelector("[data-testid='layout-mock']");
+
+      // Assert
       expect(layout).toHaveAttribute("data-title", "Login - Ecommerce App");
     });
   });

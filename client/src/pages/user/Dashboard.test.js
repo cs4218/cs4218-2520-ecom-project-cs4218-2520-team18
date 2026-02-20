@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import Dashboard from "./Dashboard";
@@ -22,22 +24,25 @@ describe("Dashboard Page", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  describe("Renders correctly", () => {
+
+  describe("Rendering", () => {
     it("should render the Layout and UserMenu components", () => {
+      // Arrange
       const mockUser = {
         name: "John Doe",
         email: "john.doe@example.com",
         address: "123 Test St, Test City, TC 12345",
       };
-
       useAuth.mockReturnValue([{ user: mockUser }, jest.fn()]);
 
+      // Act
       render(
         <MemoryRouter>
           <Dashboard />
         </MemoryRouter>,
       );
 
+      // Assert
       const layout = screen.getByTestId("layout-mock");
       expect(layout).toBeInTheDocument();
       expect(layout).toHaveAttribute("title", "Dashboard - Ecommerce App");
@@ -51,20 +56,24 @@ describe("Dashboard Page", () => {
     });
   });
 
-  describe("Handles missing user data gracefully", () => {
+  describe("Error Handling", () => {
     it("should display partial data when some user fields are missing", () => {
+      // Arrange
       const mockUser = {
         name: "Jane Doe",
         // email is missing
         address: "456 Sample Rd, Sample City, SC 67890",
       };
       useAuth.mockReturnValue([{ user: mockUser }, jest.fn()]);
+
+      // Act
       render(
         <MemoryRouter>
           <Dashboard />
         </MemoryRouter>,
       );
 
+      // Assert
       const layout = screen.getByTestId("layout-mock");
       expect(layout).toBeInTheDocument();
 
@@ -76,14 +85,17 @@ describe("Dashboard Page", () => {
     });
 
     it("should not crash and display empty fields when user data is missing", () => {
+      // Arrange
       useAuth.mockReturnValue([{}, jest.fn()]);
 
+      // Act
       render(
         <MemoryRouter>
           <Dashboard />
         </MemoryRouter>,
       );
 
+      // Assert
       const layout = screen.getByTestId("layout-mock");
       expect(layout).toBeInTheDocument();
 
@@ -95,13 +107,17 @@ describe("Dashboard Page", () => {
     });
 
     it("should render safely when auth state is strictly null", () => {
+      // Arrange
       useAuth.mockReturnValue([null, jest.fn()]);
+
+      // Act
       render(
         <MemoryRouter>
           <Dashboard />
         </MemoryRouter>,
       );
 
+      // Assert
       const layout = screen.getByTestId("layout-mock");
       expect(layout).toBeInTheDocument();
 

@@ -1,3 +1,5 @@
+// Loh Ze Qing Norbert, A0277473R
+
 export const validateEmail = (email) => {
     const emailRegex = /^((?:[A-Za-z0-9!#$%&'*+\-\/=?^_`{|}~]|(?<=^|\.)"|"(?=$|\.|@)|(?<=".*)[ .](?=.*")|(?<!\.)\.){1,64})(@)((?:[A-Za-z0-9.\-])*(?:[A-Za-z0-9])\.(?:[A-Za-z0-9]){2,})$/gm;
     return emailRegex.test(email);
@@ -9,7 +11,15 @@ export const validatePhoneE164 = (phone) => {
 }
 
 export const validatePassword = (password) => {
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
+        return false;
+    }
+    return true;
+}
+
+export const validateName = (name) => {
+    // Name should be between 1 and 100 characters
+    if (!name || name.trim().length === 0 || name.trim().length > 100) {
         return false;
     }
     return true;
