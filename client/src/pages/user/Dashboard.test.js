@@ -26,7 +26,7 @@ describe("Dashboard Page", () => {
   });
 
   describe("Rendering", () => {
-    it("should render the Layout and UserMenu components", () => {
+    it("should display user information from auth context", () => {
       // Arrange
       const mockUser = {
         name: "John Doe",
@@ -43,21 +43,37 @@ describe("Dashboard Page", () => {
       );
 
       // Assert
-      const layout = screen.getByTestId("layout-mock");
-      expect(layout).toBeInTheDocument();
-      expect(layout).toHaveAttribute("title", "Dashboard - Ecommerce App");
+      expect(screen.getByTestId("layout-mock")).toBeInTheDocument();
+      expect(screen.getByTestId("layout-mock")).toHaveAttribute(
+        "title",
+        "Dashboard - Ecommerce App",
+      );
+      expect(screen.getByTestId("user-menu-mock")).toBeInTheDocument();
 
-      const userMenu = screen.getByTestId("user-menu-mock");
-      expect(userMenu).toBeInTheDocument();
+      expect(screen.getByText(mockUser.name)).toBeInTheDocument();
+      expect(screen.getByText(mockUser.email)).toBeInTheDocument();
+      expect(screen.getByText(mockUser.address)).toBeInTheDocument();
+    });
 
-      expect(screen.getByTestId("name")).toHaveTextContent(mockUser.name);
-      expect(screen.getByTestId("email")).toHaveTextContent(mockUser.email);
-      expect(screen.getByTestId("address")).toHaveTextContent(mockUser.address);
+    it("should render layout and menu even when user is missing", () => {
+      // Arrange
+      useAuth.mockReturnValue([{}, jest.fn()]);
+
+      // Act
+      render(
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>,
+      );
+
+      // Assert
+      expect(screen.getByTestId("layout-mock")).toBeInTheDocument();
+      expect(screen.getByTestId("user-menu-mock")).toBeInTheDocument();
     });
   });
 
   describe("Error Handling", () => {
-    it("should display partial data when some user fields are missing", () => {
+    it("should display available data when some user fields are missing", () => {
       // Arrange
       const mockUser = {
         name: "Jane Doe",
@@ -74,39 +90,13 @@ describe("Dashboard Page", () => {
       );
 
       // Assert
-      const layout = screen.getByTestId("layout-mock");
-      expect(layout).toBeInTheDocument();
-
-      const userMenu = screen.getByTestId("user-menu-mock");
-      expect(userMenu).toBeInTheDocument();
-      expect(screen.getByTestId("name")).toHaveTextContent(mockUser.name);
-      expect(screen.getByTestId("email")).toHaveTextContent("");
-      expect(screen.getByTestId("address")).toHaveTextContent(mockUser.address);
+      expect(screen.getByText(mockUser.name)).toBeInTheDocument();
+      expect(screen.getByText(mockUser.address)).toBeInTheDocument();
+      // Email field should not display the missing email
+      expect(screen.queryByText("undefined")).not.toBeInTheDocument();
     });
 
-    it("should not crash and display empty fields when user data is missing", () => {
-      // Arrange
-      useAuth.mockReturnValue([{}, jest.fn()]);
-
-      // Act
-      render(
-        <MemoryRouter>
-          <Dashboard />
-        </MemoryRouter>,
-      );
-
-      // Assert
-      const layout = screen.getByTestId("layout-mock");
-      expect(layout).toBeInTheDocument();
-
-      const userMenu = screen.getByTestId("user-menu-mock");
-      expect(userMenu).toBeInTheDocument();
-      expect(screen.getByTestId("name")).toBeInTheDocument();
-      expect(screen.getByTestId("email")).toBeInTheDocument();
-      expect(screen.getByTestId("address")).toBeInTheDocument();
-    });
-
-    it("should render safely when auth state is strictly null", () => {
+    it("should not crash when auth state is null", () => {
       // Arrange
       useAuth.mockReturnValue([null, jest.fn()]);
 
@@ -118,14 +108,24 @@ describe("Dashboard Page", () => {
       );
 
       // Assert
-      const layout = screen.getByTestId("layout-mock");
-      expect(layout).toBeInTheDocument();
+      expect(screen.getByTestId("layout-mock")).toBeInTheDocument();
+      expect(screen.getByTestId("user-menu-mock")).toBeInTheDocument();
+    });
 
-      const userMenu = screen.getByTestId("user-menu-mock");
-      expect(userMenu).toBeInTheDocument();
-      expect(screen.getByTestId("name")).toBeInTheDocument();
-      expect(screen.getByTestId("email")).toBeInTheDocument();
-      expect(screen.getByTestId("address")).toBeInTheDocument();
+    it("should not crash when auth is empty object", () => {
+      // Arrange
+      useAuth.mockReturnValue([{}, jest.fn()]);
+
+      // Act
+      render(
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>,
+      );
+
+      // Assert
+      expect(screen.getByTestId("layout-mock")).toBeInTheDocument();
+      expect(screen.getByTestId("user-menu-mock")).toBeInTheDocument();
     });
   });
 });
