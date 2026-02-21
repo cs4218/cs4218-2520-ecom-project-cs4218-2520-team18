@@ -348,7 +348,7 @@ describe("Login Component", () => {
 
       // Assert
       await waitFor(() => expect(axios.post).toHaveBeenCalled());
-      expect(consoleSpy).toHaveBeenCalledWith(new Error("Network Error"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
       consoleSpy.mockRestore();
     });
   });

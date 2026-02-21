@@ -51,7 +51,7 @@ describe("testController Unit Tests", () => {
       testController(req, res);
 
       // Assert
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,

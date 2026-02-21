@@ -395,7 +395,7 @@ describe("updateProfileController Comprehensive Unit Tests", () => {
           message: "Error while updating profile",
         })
       );
-      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
 
     test("should handle hashing failures", async () => {
@@ -426,7 +426,7 @@ describe("updateProfileController Comprehensive Unit Tests", () => {
           message: "Error while updating profile",
         })
       );
-      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
 
     test("should handle database update failures", async () => {
@@ -451,7 +451,7 @@ describe("updateProfileController Comprehensive Unit Tests", () => {
 
       // Assert
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

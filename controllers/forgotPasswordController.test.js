@@ -170,7 +170,7 @@ describe("forgotPasswordController Comprehensive Unit Tests", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({ message: "Error in Forgot Password" })
       );
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
 
     test("should handle hashing failures", async () => {

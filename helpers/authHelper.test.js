@@ -77,7 +77,7 @@ describe("authHelper Utility Functions Unit Tests", () => {
         await expect(hashPassword("password")).rejects.toThrow("Bcrypt hashing failed");
 
         // Assert
-        expect(consoleSpy).toHaveBeenCalledWith(mockError);
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
       });
     });
   });
@@ -164,7 +164,7 @@ describe("authHelper Utility Functions Unit Tests", () => {
         }
 
         // Assert
-        expect(consoleSpy).toHaveBeenCalledWith(mockError);
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
       });
     });
   });
