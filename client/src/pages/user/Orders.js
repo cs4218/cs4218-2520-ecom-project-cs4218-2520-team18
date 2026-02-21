@@ -31,7 +31,7 @@ const Orders = () => {
             <h1 className="text-center">All Orders</h1>
             {orders?.map((o, i) => {
               return (
-                <div className="border shadow">
+                <div className="border shadow" key={o._id}>
                   <table className="table">
                     <thead>
                       <tr>
@@ -69,7 +69,7 @@ const Orders = () => {
                         <div className="col-md-8">
                           <p>{p.name}</p>
                           <p>{p.description.substring(0, 30)}</p>
-                          <p>Price : {p.price}</p>
+                          <p>Price : {p.price.toFixed(2)}</p>
                         </div>
                       </div>
                     ))}
