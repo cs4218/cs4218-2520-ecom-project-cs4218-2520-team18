@@ -144,6 +144,206 @@ describe("Register Component", () => {
     });
   });
 
+  describe("Input Validation - Empty Fields", () => {
+    it("should show error when name is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "",
+        email: "test@example.com",
+        password: "password123",
+        phone: "+1234567890",
+        address: "123 Test St",
+        DOB: "2000-01-01",
+        answer: "test answer",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
+      });
+    });
+
+    it("should show error when email is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+      validationHelpers.isValidEmail.mockReturnValue(false);
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "Test User",
+        email: "",
+        password: "password123",
+        phone: "+1234567890",
+        address: "123 Test St",
+        DOB: "2000-01-01",
+        answer: "test answer",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Invalid Email");
+      });
+    });
+
+    it("should show error when password is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+      validationHelpers.isPasswordLongEnough.mockReturnValue(false);
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "Test User",
+        email: "test@example.com",
+        password: "",
+        phone: "+1234567890",
+        address: "123 Test St",
+        DOB: "2000-01-01",
+        answer: "test answer",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Password must be at least 6 characters long");
+      });
+    });
+  });
+
+  describe("Input Validation - Other Empty Fields", () => {
+    it("should show error when phone is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+      validationHelpers.isValidPhone.mockReturnValue(false);
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "Test User",
+        email: "test@example.com",
+        password: "password123",
+        phone: "",
+        address: "123 Test St",
+        DOB: "2000-01-01",
+        answer: "test answer",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+      });
+    });
+
+    it("should show error when DOB is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+      validationHelpers.isValidDOBFormat.mockReturnValue(false);
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "Test User",
+        email: "test@example.com",
+        password: "password123",
+        phone: "+1234567890",
+        address: "123 Test St",
+        DOB: "",
+        answer: "test answer",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Date of Birth must be a valid date");
+      });
+    });
+
+    it("should show error when answer is empty", async () => {
+      // Arrange
+      axios.get.mockResolvedValueOnce({ data: { category: [] } });
+
+      const { getByText, getByPlaceholderText } = render(
+        <MemoryRouter initialEntries={["/register"]}>
+          <Routes>
+            <Route path="/register" element={<Register />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // Act
+      const formData = {
+        name: "Test User",
+        email: "test@example.com",
+        password: "password123",
+        phone: "+1234567890",
+        address: "123 Test St",
+        DOB: "2000-01-01",
+        answer: "",
+      };
+      fillForm(getByPlaceholderText, formData);
+      fireEvent.click(getByText("REGISTER"));
+
+      // Assert
+      await waitFor(() => {
+        expect(axios.post).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith("Answer is required");
+      });
+    });
+  });
+
   describe("Registration Error Handling", () => {
     let consoleSpy;
     beforeEach(() => {

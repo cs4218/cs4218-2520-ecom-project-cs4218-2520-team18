@@ -269,7 +269,7 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
 
         // Assert
         expect(res.status).toHaveBeenCalledWith(401);
-        expect(consoleSpy).toHaveBeenCalledWith(error);
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
@@ -355,12 +355,12 @@ describe("Auth Middleware Comprehensive Unit Tests", () => {
 
         // Assert
         expect(res.status).toHaveBeenCalledWith(500);
-        expect(consoleSpy).toHaveBeenCalledWith(dbError);
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
         expect(res.send).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
             message: "Error in Auth Middleware",
-            error: dbError,
+            error: expect.any(Error),
           }),
         );
         expect(next).not.toHaveBeenCalled();

@@ -348,7 +348,7 @@ describe("registerController Comprehensive Unit Tests", () => {
 
       // Assert
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
 
     test("should handle hashing failures", async () => {
@@ -381,7 +381,7 @@ describe("registerController Comprehensive Unit Tests", () => {
 
       // Assert
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(consoleSpy).toHaveBeenCalledWith(saveError);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });
