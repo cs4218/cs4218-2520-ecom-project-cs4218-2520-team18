@@ -353,32 +353,41 @@ export const braintreeTokenController = async (req, res) => {
 export const brainTreePaymentController = async (req, res) => {
   try {
     const { nonce, cart } = req.body;
-    let total = 0;
-    cart.map((i) => {
-      total += i.price;
-    });
-    let newTransaction = gateway.transaction.sale(
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!nonce || !cart || cart.length === 0) {
+      return res.status(400).json({ error: 'Invalid payment data' });
+    }
+
+    const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+    gateway.transaction.sale(
       {
-        amount: total,
+        amount: total.toFixed(2),
         paymentMethodNonce: nonce,
-        options: {
-          submitForSettlement: true,
-        },
+        options: { submitForSettlement: true },
       },
-      function (error, result) {
-        if (result) {
-          const order = new orderModel({
+      async (error, result) => {
+        if (result?.success) {
+          await new orderModel({
             products: cart,
             payment: result,
             buyer: req.user._id,
           }).save();
+
           res.json({ ok: true });
         } else {
-          res.status(500).send(error);
+          res.status(400).json({
+            error: result?.message || error,
+          });
         }
       },
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ error: 'Payment failed' });
   }
 };

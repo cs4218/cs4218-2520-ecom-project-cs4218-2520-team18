@@ -9,6 +9,7 @@ jest.mock('braintree', () => {
       sale: jest.fn(),
     },
   };
+
   return {
     BraintreeGateway: jest.fn(() => mockGatewayInstance),
     Environment: { Sandbox: 'Sandbox' },
@@ -25,7 +26,6 @@ import {
   braintreeTokenController,
   brainTreePaymentController,
 } from './productController';
-import orderModel from '../models/orderModel.js';
 import braintree from 'braintree';
 
 describe('Braintree Controller Unit Tests', () => {
@@ -40,6 +40,7 @@ describe('Braintree Controller Unit Tests', () => {
       body: {},
       user: { _id: 'user123' },
     };
+
     res = {
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
@@ -93,46 +94,89 @@ describe('Braintree Controller Unit Tests', () => {
   });
 
   describe('brainTreePaymentController', () => {
-    test('should calculate total and process payment successfully', async () => {
+    test('should process payment successfully', async () => {
       req.body = {
         nonce: 'fake-nonce',
         cart: [{ price: 100 }, { price: 200 }],
       };
 
-      const mockResult = { success: true, transaction: { id: 'tx123' } };
+      const mockResult = {
+        success: true,
+        transaction: { id: 'tx123' },
+      };
 
-      mockGateway.transaction.sale.mockImplementation((obj, cb) => {
+      mockGateway.transaction.sale.mockImplementation((payload, cb) => {
         cb(null, mockResult);
       });
 
       await brainTreePaymentController(req, res);
 
       expect(mockGateway.transaction.sale).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 300 }),
+        expect.objectContaining({
+          amount: '300.00',
+          paymentMethodNonce: 'fake-nonce',
+        }),
         expect.any(Function),
       );
+
       expect(res.json).toHaveBeenCalledWith({ ok: true });
     });
 
-    test('should send 500 error if transaction fails', async () => {
+    test('should return 401 if user is not authenticated', async () => {
+      req.user = null;
+      req.body = {
+        nonce: 'fake-nonce',
+        cart: [{ price: 100 }],
+      };
+
+      await brainTreePaymentController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthorized',
+      });
+    });
+
+    test('should return 400 if cart or nonce is missing', async () => {
+      req.body = {
+        nonce: '',
+        cart: [],
+      };
+
+      await brainTreePaymentController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid payment data',
+      });
+    });
+
+    test('should return 400 if transaction fails', async () => {
       req.body = {
         nonce: 'fake-nonce',
         cart: [{ price: 50 }],
       };
 
-      const mockError = new Error('Transaction Failed');
-      mockGateway.transaction.sale.mockImplementation((obj, cb) => {
-        cb(mockError, null);
+      const mockResult = {
+        success: false,
+        message: 'Transaction failed',
+      };
+
+      mockGateway.transaction.sale.mockImplementation((_, cb) => {
+        cb(null, mockResult);
       });
 
       await brainTreePaymentController(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.send).toHaveBeenCalledWith(mockError);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Transaction failed',
+      });
     });
 
-    test('brainTreePaymentController catches unexpected error', async () => {
+    test('should catch unexpected payment errors', async () => {
       const consoleSpy = jest
-        .spyOn(console, 'log')
+        .spyOn(console, 'error')
         .mockImplementation(() => {});
 
       req.body = {
@@ -147,10 +191,10 @@ describe('Braintree Controller Unit Tests', () => {
       await brainTreePaymentController(req, res);
 
       expect(consoleSpy).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls[0][0]).toBeInstanceOf(Error);
-      expect(consoleSpy.mock.calls[0][0].message).toBe(
-        'Unexpected payment error',
-      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Payment failed',
+      });
 
       consoleSpy.mockRestore();
     });
