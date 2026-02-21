@@ -91,7 +91,7 @@ describe("createCategoryController", () => {
         expect(categoryModel.findOne).toHaveBeenCalledWith({ name: "Electronics" });
         expect(res.status).toHaveBeenCalledWith(409);
         expect(res.send).toHaveBeenCalledWith({
-            success: true,
+            success: false,
             message: "Category already exists",
         });
         expect(slugify).not.toHaveBeenCalled();
