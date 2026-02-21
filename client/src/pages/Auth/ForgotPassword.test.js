@@ -358,7 +358,7 @@ describe("ForgotPassword Component", () => {
 
     it("should log error and show generic message if error has no message", async () => {
       // Arrange
-      axios.post.mockRejectedValue({});
+      axios.post.mockRejectedValue(new Error());
       const { getByPlaceholderText, getByText } = render(
         <MemoryRouter initialEntries={["/forgot-password"]}>
           <Routes>
@@ -389,7 +389,7 @@ describe("ForgotPassword Component", () => {
             newPassword: "newpassword123",
           },
         );
-        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
         expect(toast.error).toHaveBeenCalledWith(
           "An unexpected error occurred",
         );

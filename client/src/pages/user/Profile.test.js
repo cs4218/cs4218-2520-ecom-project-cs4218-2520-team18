@@ -904,7 +904,7 @@ describe("Profile Component", () => {
 
         // Assert
         await waitFor(() => {
-          expect(consoleErrorSpy).toHaveBeenCalled();
+          expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
           expect(toast.error).toHaveBeenCalledWith("Profile Update Failed");
         });
       });
@@ -928,7 +928,7 @@ describe("Profile Component", () => {
 
         // Assert
         await waitFor(() => {
-          expect(consoleErrorSpy).toHaveBeenCalled();
+          expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
           expect(toast.error).toHaveBeenCalledWith("Profile Update Failed");
         });
       });

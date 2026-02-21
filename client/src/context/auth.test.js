@@ -169,7 +169,10 @@ describe("AuthProvider", () => {
       }).not.toThrow();
 
       // Assert
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Error),
+      );
       consoleErrorSpy.mockRestore();
     });
 
