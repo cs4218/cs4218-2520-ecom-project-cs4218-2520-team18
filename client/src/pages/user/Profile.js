@@ -66,6 +66,11 @@ const Profile = () => {
         return;
       }
 
+      if (!DOB) {
+        toast.error("Date of Birth is required");
+        return;
+      }
+
       if (!isValidDOBFormat(DOB)) {
         toast.error("Date of Birth must be in YYYY-MM-DD format");
         return;

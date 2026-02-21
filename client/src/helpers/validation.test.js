@@ -203,6 +203,7 @@ describe("Client-side validation helpers", () => {
         ["01-01-2023", false, "Reversed format"],
         ["2023/01/01", false, "Slash separator"],
         [" 2023-01-01 ", false, "Leading/trailing spaces"],
+        ["", false, "Empty string"],
       ])("isValidDOBFormat should return false for %p (%s)", (dob, expected, _description) => {
         // Arrange & Act
         const result = isValidDOBFormat(dob);
