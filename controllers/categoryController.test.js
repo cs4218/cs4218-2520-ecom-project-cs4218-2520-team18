@@ -71,7 +71,7 @@ describe("createCategoryController", () => {
 
         await createCategoryController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ message: "Name is required" });
         expect(categoryModel.findOne).not.toHaveBeenCalled();
     });
@@ -89,7 +89,7 @@ describe("createCategoryController", () => {
         await createCategoryController(req, res);
 
         expect(categoryModel.findOne).toHaveBeenCalledWith({ name: "Electronics" });
-        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.status).toHaveBeenCalledWith(409);
         expect(res.send).toHaveBeenCalledWith({
             success: true,
             message: "Category already exists",
