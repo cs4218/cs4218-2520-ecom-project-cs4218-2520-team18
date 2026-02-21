@@ -1,3 +1,6 @@
+// Aw Jean Leng Adrian, A0277537N
+
+import React from 'react';
 import { useState, useContext, createContext } from "react";
 
 const SearchContext = createContext();
