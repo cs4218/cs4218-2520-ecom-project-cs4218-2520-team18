@@ -166,3 +166,6 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/user/Dashboard.test.js
    - client/src/pages/user/Profile.test.js
    - client/src/helpers/validation.test.js
+
+## MS1 CI URL
+- [CI URL](<CI_URL>)
