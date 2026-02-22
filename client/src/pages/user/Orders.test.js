@@ -311,9 +311,9 @@ describe("Orders Component", () => {
             renderWithRouter(<Orders />);
 
             await waitFor(() => {
-                expect(screen.getByText("Price : 14.99")).toBeInTheDocument();
-                expect(screen.getByText("Price : 4.99")).toBeInTheDocument();
-                expect(screen.getByText("Price : 1499.99")).toBeInTheDocument();
+                expect(screen.getByText((_, el) => el.textContent === "Price: $14.99")).toBeInTheDocument();
+                expect(screen.getByText((_, el) => el.textContent === "Price: $4.99")).toBeInTheDocument();
+                expect(screen.getByText((_, el) => el.textContent === "Price: $1499.99")).toBeInTheDocument();
             });
         });
 
