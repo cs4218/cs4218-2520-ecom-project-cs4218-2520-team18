@@ -167,5 +167,17 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/user/Profile.test.js
    - client/src/helpers/validation.test.js
 
+
+## 7. AI Declaration
+AI tools such as Copilot and Gemini were used throughout the milestone.
+Use of AI included:
+- Generating boilerplate code for unit tests.
+- Assisting in writing test cases and assertions.
+- Providing suggestions for test structure and organization.
+- Debugging and troubleshooting test failures.
+- Reviewing and improving test coverage.
+- Checking for best practices in test writing and implementation.
+- Assisted in planning and refinement of Milestone 1 tasks and workload distribution.
+
 ## MS1 CI URL
 - [CI URL](<CI_URL>)
