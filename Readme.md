@@ -178,11 +178,27 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/components/Spinner.test.js
    - client/src/pages/About.test.js
    - client/src/pages/Pagenotfound.test.js
-   - client/config/db.test.js
    - client/src/pages/HomePage.test.js
    - client/src/context/cart.test.js
    - client/src/pages/CartPage.test.js
-   - client/controllers/productController.test.js
+   - config/db.test.js
+   - controllers/productController.test.js
+
+4. Billy Ho Cheng En
+   Unit Tests:
+   - client/src/pages/ProductDetails.test.js
+   - client/src/pages/categoryProduct.test.js
+   - controllers/productController.test.js
+      - getProductController
+      - getSingleProductController
+      - productPhotoController
+      - productFiltersController
+      - productCountController
+      - productListController
+      - searchProductController
+      - realtedProductController
+      - productCategoryController
+
 
 ## 7. AI Declaration
 
