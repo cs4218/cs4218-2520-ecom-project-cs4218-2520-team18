@@ -135,8 +135,7 @@ To begin unit testing with Jest in your project, follow these steps:
      ```
 
 ## 6. Workload
-
-1. Loh Ze Qing Norbert
+1. Loh Ze Qing Norbert   
    Unit Tests:
    - helpers/authHelper.test.js
    - helpers/validationHelper.test.js
@@ -157,7 +156,19 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/user/Profile.test.js
    - client/src/helpers/validation.test.js
 
-2. Sherwyn Ng Cheng Xin
+2. Lim Kok Liang  
+   Unit Tests:
+   - controllers/categoryController.test.js
+   - controllers/productController.test.js
+   - client/src/components/Form/CategoryForm.test.js
+   - client/src/pages/admin/Users.test.js
+   - client/src/pages/admin/Products.test.js
+   - client/src/pages/admin/CreateProduct.test.js
+   - client/src/pages/admin/UpdateProduct.test.js
+   - client/src/pages/admin/CreateCategory.test.js
+   - client/src/pages/admin/AdminOrders.test.js
+
+3. Sherwyn Ng Cheng Xin  
    Unit Tests:
    - client/src/pages/Contact.test.js
    - client/src/pages/Policy.test.js
