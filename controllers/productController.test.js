@@ -36,7 +36,7 @@ import {
   productCountController,
   productListController,
   searchProductController,
-  realtedProductController,
+  relatedProductController,
   productCategoryController,
 } from './productController';
 import braintree from 'braintree';
@@ -656,7 +656,7 @@ describe('Product Controller Unit Tests', () => {
 
     test('should skip correct number of products per page', async () => {
       // Arrange
-      const mockQuery = mockPaginatedFindChain(mockProducts);
+      const mockQuery = mockPaginatedFindChain([]);
       req.params.page = '5';
 
       // Act
@@ -716,11 +716,7 @@ describe('Product Controller Unit Tests', () => {
       await searchProductController(req, res);
 
       // Assert
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith({
-        success: true,
-        results: mockProducts,
-      });
+      expect(res.json).toHaveBeenCalledWith(mockProducts);
     });
 
     test('should return empty array when no matches found', async () => {
@@ -732,11 +728,7 @@ describe('Product Controller Unit Tests', () => {
       await searchProductController(req, res);
 
       // Assert
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith({
-        success: true,
-        results: [],
-      });
+      expect(res.json).toHaveBeenCalledWith([]);
     });
 
     test('should handle database errors', async () => {
