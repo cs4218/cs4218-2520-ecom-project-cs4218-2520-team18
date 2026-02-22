@@ -67,7 +67,7 @@ describe('Search Component', () => {
 
             renderWithRouter(<Search />);
 
-            expect(screen.getByText('Search Resuts')).toBeInTheDocument();
+            expect(screen.getByText('Search Results')).toBeInTheDocument();
         });
 
         test('should have correct container structure', () => {
