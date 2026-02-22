@@ -1,3 +1,5 @@
+// Aw Jean Leng Adrian, A0277537N
+
 import categoryModel from "../models/categoryModel.js";
 import slugify from "slugify";
 export const createCategoryController = async (req, res) => {

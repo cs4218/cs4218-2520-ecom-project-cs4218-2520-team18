@@ -144,3 +144,40 @@ To begin unit testing with Jest in your project, follow these steps:
      ```bash
      npm run test
      ```
+
+## 6. Workload
+1. Loh Ze Qing Norbert
+   Unit Tests:
+   - helpers/authHelper.test.js
+   - helpers/validationHelper.test.js
+   - middlewares/authMiddleware.test.js
+   - controllers/registerController.test.js
+   - controllers/loginController.test.js
+   - controllers/forgotPasswordController.test.js
+   - controllers/testController.test.js
+   - controllers/userController.test.js
+   - models/userModel.test.js
+   - client/src/context/auth.test.js
+   - client/src/pages/Auth/Register.test.js
+   - client/src/pages/Auth/Login.test.js
+   - client/src/pages/Auth/ForgotPassword.test.js
+   - client/src/components/Routes/Private.test.js
+   - client/src/components/UserMenu.test.js
+   - client/src/pages/user/Dashboard.test.js
+   - client/src/pages/user/Profile.test.js
+   - client/src/helpers/validation.test.js
+
+
+## 7. AI Declaration
+AI tools such as Copilot and Gemini were used throughout the milestone.
+Use of AI included:
+- Generating boilerplate code for unit tests.
+- Assisting in writing test cases and assertions.
+- Providing suggestions for test structure and organization.
+- Debugging and troubleshooting test failures.
+- Reviewing and improving test coverage.
+- Checking for best practices in test writing and implementation.
+- Assisted in planning and refinement of Milestone 1 tasks and workload distribution.
+
+## MS1 CI URL
+- [CI URL](<CI_URL>)

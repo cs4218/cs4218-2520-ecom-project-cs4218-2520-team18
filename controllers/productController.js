@@ -196,19 +196,18 @@ export const getProductController = async (req, res) => {
       .find({})
       .populate('category')
       .select('-photo')
-      .limit(12)
       .sort({ createdAt: -1 });
     res.status(200).send({
       success: true,
-      counTotal: products.length,
-      message: 'ALlProducts ',
+      countTotal: products.length,
+      message: 'All Products',
       products,
     });
   } catch (error) {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: 'Erorr in getting products',
+      message: 'Error in getting products',
       error: error.message,
     });
   }
@@ -229,7 +228,7 @@ export const getSingleProductController = async (req, res) => {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: 'Eror while getitng single product',
+      message: 'Error while getting single product',
       error,
     });
   }
@@ -243,11 +242,14 @@ export const productPhotoController = async (req, res) => {
       res.set('Content-type', product.photo.contentType);
       return res.status(200).send(product.photo.data);
     }
+    else {
+      res.status(200).send(null);
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: 'Erorr while getting photo',
+      message: 'Error while getting photo',
       error,
     });
   }
@@ -276,7 +278,7 @@ export const productFiltersController = async (req, res) => {
     console.log(error);
     res.status(400).send({
       success: false,
-      message: 'Error WHile Filtering Products',
+      message: 'Error while filtering products',
       error,
     });
   }
@@ -329,7 +331,7 @@ export const productListController = async (req, res) => {
 export const searchProductController = async (req, res) => {
   try {
     const { keyword } = req.params;
-    const resutls = await productModel
+    const results = await productModel
       .find({
         $or: [
           { name: { $regex: keyword, $options: 'i' } },
@@ -337,7 +339,7 @@ export const searchProductController = async (req, res) => {
         ],
       })
       .select('-photo');
-    res.json(resutls);
+    res.json(results);
   } catch (error) {
     console.log(error);
     res.status(400).send({
@@ -349,7 +351,7 @@ export const searchProductController = async (req, res) => {
 };
 
 // similar products
-export const realtedProductController = async (req, res) => {
+export const relatedProductController = async (req, res) => {
   try {
     const { pid, cid } = req.params;
     const products = await productModel
@@ -368,7 +370,7 @@ export const realtedProductController = async (req, res) => {
     console.log(error);
     res.status(400).send({
       success: false,
-      message: 'error while geting related product',
+      message: 'Error while getting related product',
       error,
     });
   }
