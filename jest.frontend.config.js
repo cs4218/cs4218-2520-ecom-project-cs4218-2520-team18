@@ -31,10 +31,16 @@ export default {
     '<rootDir>/client/src/helpers/*.test.js',
     "<rootDir>/client/src/pages/admin/*.test.js",
     '<rootDir>/client/src/pages/*.test.js',
-    '<rootDir>/controllers/*.test.js',
-    '<rootDir>/config/*.test.js',
     "<rootDir>/client/src/hooks/*.test.js",
     "<rootDir>/client/src/components/Form/*.test.js",
+  ],
+
+  testPathIgnorePatterns: [
+    '<rootDir>/controllers/',
+    '<rootDir>/config/',
+    '<rootDir>/helpers/',
+    '<rootDir>/middlewares/',
+    '<rootDir>/models/',
   ],
 
   // jest code coverage
@@ -48,8 +54,6 @@ export default {
     'client/src/helpers/**',
     "client/src/pages/admin/**",
     'client/src/pages/**',
-    'controllers/**',
-    'config/**',
     "client/src/hooks/**",
     "client/src/components/**"
   ],
