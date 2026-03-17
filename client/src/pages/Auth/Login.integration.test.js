@@ -77,6 +77,42 @@ describe("Login - Integration Tests", () => {
 	});
 
 	describe("The Happy Path (End-to-End Login)", () => {
+		test("Login - AuthContext handshake updates context state and axios auth header", async () => {
+			const token = "contextHandshakeToken";
+			const mockUser = { _id: "u-auth", name: "Auth Handshake User", email: "auth@test.com" };
+			axios.post.mockResolvedValueOnce({
+				data: {
+					success: true,
+					message: "Login successful",
+					user: mockUser,
+					token,
+				},
+			});
+
+			renderLogin();
+			expect(screen.getByTestId("auth-user")).toHaveTextContent("NO_USER");
+			expect(screen.getByTestId("auth-token")).toHaveTextContent("NO_TOKEN");
+
+			typeCredentials("auth@test.com", "password123");
+			fireEvent.click(screen.getByRole("button", { name: /login/i }));
+
+			await waitFor(() => {
+				expect(screen.getByTestId("auth-user")).toHaveTextContent("Auth Handshake User");
+				expect(screen.getByTestId("auth-token")).toHaveTextContent("TOKEN_PRESENT");
+			});
+
+			expect(axios.defaults.headers.common.Authorization).toBe(token);
+			expect(setItemSpy).toHaveBeenCalledWith(
+				"auth",
+				JSON.stringify({
+					success: true,
+					message: "Login successful",
+					user: mockUser,
+					token,
+				}),
+			);
+		});
+
 		test("submits credentials, updates auth state, persists session, toasts success, and navigates home", async () => {
 			const mockUser = { _id: "u1", name: "Mock User", email: "test@test.com" };
 			axios.post.mockResolvedValueOnce({
