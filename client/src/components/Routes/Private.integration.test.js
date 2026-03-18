@@ -7,8 +7,15 @@ import axios from "axios";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import PrivateRoute from "./Private";
 import { AuthProvider } from "../../context/auth";
+import Dashboard from "../../pages/user/Dashboard";
 
 jest.mock("axios");
+
+jest.mock("../../components/Layout", () => ({ children }) => (
+	<div data-testid="layout-mock">{children}</div>
+));
+
+jest.mock("../../components/UserMenu", () => () => <div data-testid="usermenu-mock">UserMenu</div>);
 
 describe("PrivateRoute - Integration Tests", () => {
 	const setAuthStorage = (authValue) => {
@@ -32,12 +39,50 @@ describe("PrivateRoute - Integration Tests", () => {
 			</AuthProvider>,
 		);
 
+	const renderProtectedDashboard = () =>
+		render(
+			<AuthProvider>
+				<MemoryRouter initialEntries={["/dashboard"]}>
+					<Routes>
+						<Route path="/" element={<PrivateRoute />}>
+							<Route path="dashboard" element={<Dashboard />} />
+						</Route>
+					</Routes>
+				</MemoryRouter>
+			</AuthProvider>,
+		);
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 		localStorage.clear();
 	});
 
 	describe("The Happy Path (Access Granted)", () => {
+		test("auth context with valid token grants access to Dashboard component", async () => {
+			setAuthStorage({
+				user: {
+					name: "Dashboard User",
+					email: "dashboard.user@example.com",
+					address: "123 Dashboard Street",
+				},
+				token: "valid-token",
+			});
+			axios.get.mockResolvedValueOnce({ data: { ok: true } });
+
+			renderProtectedDashboard();
+
+			await waitFor(() => {
+				expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+			});
+
+			await waitFor(() => {
+				expect(screen.getByText("Dashboard User")).toBeInTheDocument();
+				expect(screen.getByText("dashboard.user@example.com")).toBeInTheDocument();
+				expect(screen.getByText("123 Dashboard Street")).toBeInTheDocument();
+				expect(screen.getByTestId("usermenu-mock")).toBeInTheDocument();
+			});
+		});
+
 		test("verified token triggers auth check and renders protected child via Outlet", async () => {
 			setAuthStorage({ user: { name: "Test User" }, token: "valid-token" });
 			axios.get.mockResolvedValueOnce({ data: { ok: true } });
@@ -77,6 +122,23 @@ describe("PrivateRoute - Integration Tests", () => {
 	});
 
 	describe("Validation / Negative Paths (Access Denied)", () => {
+		test("missing auth context token denies Dashboard and keeps Spinner fallback", async () => {
+			setAuthStorage({
+				user: {
+					name: "Denied User",
+					email: "denied.user@example.com",
+					address: "No Access Street",
+				},
+			});
+
+			renderProtectedDashboard();
+
+			expect(axios.get).not.toHaveBeenCalled();
+			expect(screen.getByText(/redirecting to you in/i)).toBeInTheDocument();
+			expect(screen.queryByText("Denied User")).not.toBeInTheDocument();
+			expect(screen.queryByText("denied.user@example.com")).not.toBeInTheDocument();
+		});
+
 		test("no token renders Spinner immediately and bypasses network call", async () => {
 			setAuthStorage(null);
 
