@@ -72,6 +72,7 @@ describe("Login - Integration Tests", () => {
 		jest.restoreAllMocks();
 		jest.clearAllMocks();
 		localStorage.clear();
+		axios.defaults.headers.common.Authorization = "";
 		getItemSpy = jest.spyOn(Storage.prototype, "getItem");
 		setItemSpy = jest.spyOn(Storage.prototype, "setItem");
 	});
@@ -101,7 +102,9 @@ describe("Login - Integration Tests", () => {
 				expect(screen.getByTestId("auth-token")).toHaveTextContent("TOKEN_PRESENT");
 			});
 
-			expect(axios.defaults.headers.common.Authorization).toBe(token);
+			await waitFor(() => {
+				expect(axios.defaults.headers.common.Authorization).toBe(token);
+			});
 			expect(setItemSpy).toHaveBeenCalledWith(
 				"auth",
 				JSON.stringify({
@@ -239,6 +242,16 @@ describe("Login - Integration Tests", () => {
 	});
 
 	describe("Sanitization Contract", () => {
+		test("forgot password button navigates to forgot-password route", async () => {
+			renderLogin();
+
+			fireEvent.click(screen.getByRole("button", { name: /forgot password/i }));
+
+			await waitFor(() => {
+				expect(screen.getByTestId("location-path")).toHaveTextContent("/forgot-password");
+			});
+		});
+
 		test("form submit triggers preventDefault to avoid page reload", async () => {
 			axios.post.mockResolvedValueOnce({
 				data: {
