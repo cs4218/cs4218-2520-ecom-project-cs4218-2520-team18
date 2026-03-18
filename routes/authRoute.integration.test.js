@@ -216,6 +216,87 @@ describe("authRoute - Integration Tests (Supertest)", () => {
 		});
 	});
 
+	describe("Route-Level Handshakes", () => {
+		test("register to login handshake works end-to-end with persisted hash comparison", async () => {
+			const registerEmail = "handshake.route.user@example.com";
+			const registerPassword = "RouteHandshake123";
+
+			const registerRes = await request(app)
+				.post("/api/v1/auth/register")
+				.send({
+					name: "Route Handshake User",
+					email: registerEmail,
+					password: registerPassword,
+					phone: "+14155552679",
+					address: "Handshake Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				});
+
+			expect(registerRes.status).toBe(201);
+
+			const persistedUser = await userModel.findOne({ email: registerEmail });
+			expect(persistedUser).not.toBeNull();
+			expect(persistedUser.password).not.toBe(registerPassword);
+			expect(await comparePassword(registerPassword, persistedUser.password)).toBe(true);
+
+			const loginRes = await request(app)
+				.post("/api/v1/auth/login")
+				.send({ email: registerEmail, password: registerPassword });
+
+			expect(loginRes.status).toBe(200);
+			expect(loginRes.body.success).toBe(true);
+			expect(loginRes.body.message).toBe("Login Successful");
+			expect(loginRes.body).toHaveProperty("token");
+			expect(loginRes.body.user.email).toBe(registerEmail);
+		});
+
+		test("login token passes auth middleware and updates profile on protected route", async () => {
+			const registerEmail = "handshake.profile.route@example.com";
+			const registerPassword = "ProfileRoute123";
+
+			const registerRes = await request(app)
+				.post("/api/v1/auth/register")
+				.send({
+					name: "Profile Route User",
+					email: registerEmail,
+					password: registerPassword,
+					phone: "+14155552680",
+					address: "Old Route Address",
+					DOB: "2000-01-01",
+					answer: "blue",
+				});
+			expect(registerRes.status).toBe(201);
+
+			const loginRes = await request(app)
+				.post("/api/v1/auth/login")
+				.send({ email: registerEmail, password: registerPassword });
+			expect(loginRes.status).toBe(200);
+
+			const token = loginRes.body.token;
+			const profileRes = await request(app)
+				.put("/api/v1/auth/profile")
+				.set(authHeader(token))
+				.send({
+					name: "Updated Route User",
+					address: "Updated Route Address",
+				});
+
+			expect(profileRes.status).toBe(200);
+			expect(profileRes.body.success).toBe(true);
+			expect(profileRes.body.message).toBe("Profile Updated Successfully");
+
+			const dbUser = await userModel.findOne({ email: registerEmail });
+			expect(dbUser).not.toBeNull();
+			expect(dbUser.name).toBe("Updated Route User");
+			expect(dbUser.address).toBe("Updated Route Address");
+			expect(dbUser.phone).toBe("+14155552680");
+			expect(dbUser.DOB).toBe("2000-01-01");
+			expect(dbUser.answer).toBe("blue");
+			expect(dbUser.role).toBe(0);
+		});
+	});
+
 	describe("Protected Route Access", () => {
 		test("GET /user-auth returns 200 and ok=true for valid signed token", async () => {
 			const user = await seedUser();

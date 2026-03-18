@@ -7,6 +7,7 @@ import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
 import { loginController } from "./loginController.js";
+import { registerController } from "./registerController.js";
 
 jest.setTimeout(30000);
 
@@ -109,6 +110,55 @@ describe("loginController - Integration Tests", () => {
 			expect(validateEmailSpy).toHaveBeenCalledWith(user.email);
 			expect(jwtSignSpy).toHaveBeenCalled();
 		});
+
+		test("register-to-login handshake succeeds with persisted hash and password comparison", async () => {
+			userCounter += 1;
+			const registrationEmail = `handshake.user.${userCounter}@example.com`;
+			const registrationPassword = "HandshakePass123";
+
+			const registerReq = {
+				body: {
+					name: "Handshake User",
+					email: registrationEmail,
+					password: registrationPassword,
+					phone: "+14155552671",
+					address: "123 Handshake Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				},
+			};
+			const registerRes = createResponse();
+
+			await registerController(registerReq, registerRes);
+
+			expect(registerRes.status).toHaveBeenCalledWith(201);
+
+			const persistedUser = await userModel.findOne({ email: registrationEmail });
+			expect(persistedUser).not.toBeNull();
+			expect(persistedUser.password).not.toBe(registrationPassword);
+
+			const loginReq = {
+				body: {
+					email: registrationEmail,
+					password: registrationPassword,
+				},
+			};
+			const loginRes = createResponse();
+			const compareSpy = jest.spyOn(authHelper, "comparePassword");
+
+			await loginController(loginReq, loginRes);
+
+			expect(compareSpy).toHaveBeenCalledWith(registrationPassword, persistedUser.password);
+			expect(loginRes.status).toHaveBeenCalledWith(200);
+			expect(loginRes.send).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Login Successful",
+					token: expect.any(String),
+					user: expect.objectContaining({ email: registrationEmail }),
+				}),
+			);
+		});
 	});
 
 	describe("Authentication Failures (Negative Integration)", () => {
@@ -175,6 +225,30 @@ describe("loginController - Integration Tests", () => {
 
 			expect(findOneSpy).toHaveBeenCalledWith({ email: "user@example.com" });
 			expect(res.status).toHaveBeenCalledWith(200);
+		});
+
+		test("returns invalidError when validateEmail fails after user/password checks", async () => {
+			const { user, plainPassword } = await seedUser();
+			const req = {
+				body: {
+					email: user.email,
+					password: plainPassword,
+				},
+			};
+			const res = createResponse();
+
+			const validateEmailSpy = jest
+				.spyOn(validationHelper, "validateEmail")
+				.mockReturnValue(false);
+
+			await loginController(req, res);
+
+			expect(validateEmailSpy).toHaveBeenCalledWith(user.email);
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid Email or Password",
+			});
 		});
 
 		test.each([

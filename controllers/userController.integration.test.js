@@ -7,6 +7,7 @@ import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
 import { updateProfileController } from "./userController.js";
+import { registerController } from "./registerController.js";
 
 jest.setTimeout(30000);
 
@@ -58,6 +59,62 @@ describe("updateProfileController - Integration Tests", () => {
 	});
 
 	describe("Specific Handshakes (External Dependencies)", () => {
+		test("register-to-profile handshake preserves user integrity across controller operations", async () => {
+			userCounter += 1;
+			const registrationEmail = `register.profile.handshake.${userCounter}@example.com`;
+			const registrationPassword = "RegisterPass123";
+
+			const registerReq = {
+				body: {
+					name: "Handshake User",
+					email: registrationEmail,
+					password: registrationPassword,
+					phone: "+14155552671",
+					address: "123 Register Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				},
+			};
+			const registerRes = createResponse();
+
+			await registerController(registerReq, registerRes);
+
+			expect(registerRes.status).toHaveBeenCalledWith(201);
+
+			const registeredUser = await userModel.findOne({ email: registrationEmail });
+			expect(registeredUser).not.toBeNull();
+			expect(registeredUser.password).not.toBe(registrationPassword);
+
+			const updateReq = {
+				user: { _id: registeredUser._id },
+				body: {
+					name: "Updated Handshake User",
+					phone: "+14155550000",
+					address: "456 Updated Street",
+					DOB: "1999-09-09",
+				},
+			};
+			const updateRes = createResponse();
+
+			await updateProfileController(updateReq, updateRes);
+
+			expect(updateRes.status).toHaveBeenCalledWith(200);
+
+			const updatedUser = await userModel.findById(registeredUser._id);
+			expect(updatedUser).not.toBeNull();
+			expect(updatedUser.name).toBe("Updated Handshake User");
+			expect(updatedUser.phone).toBe("+14155550000");
+			expect(updatedUser.address).toBe("456 Updated Street");
+			expect(updatedUser.DOB).toBe("1999-09-09");
+			expect(updatedUser.email).toBe(registrationEmail);
+			expect(updatedUser.answer).toBe("blue");
+			expect(updatedUser.role).toBe(0);
+			expect(updatedUser.password).toBe(registeredUser.password);
+
+			const originalPasswordStillValid = await bcrypt.compare(registrationPassword, updatedUser.password);
+			expect(originalPasswordStillValid).toBe(true);
+		});
+
 		test("ignores req.body _id and strictly uses req.user._id", async () => {
 			const actualUser = await createSeedUser({ name: "Trusted User" });
 			const otherUser = await createSeedUser({ name: "Body ID User" });
@@ -311,6 +368,45 @@ describe("updateProfileController - Integration Tests", () => {
 			expect(res.send).toHaveBeenCalledWith({
 				success: false,
 				message: "Address cannot be empty",
+			});
+		});
+
+		test.each([
+			["name", "   ", "Name cannot be empty"],
+			["password", "", "Password cannot be empty"],
+			["phone", "   ", "Phone cannot be empty"],
+			["DOB", "   ", "DOB cannot be empty"],
+		])("returns 400 when %s is empty after trimming", async (field, value, expectedMessage) => {
+			const user = await createSeedUser();
+			const req = {
+				user: { _id: user._id },
+				body: { [field]: value },
+			};
+			const res = createResponse();
+
+			await updateProfileController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: expectedMessage,
+			});
+		});
+
+		test("returns 400 for invalid DOB format", async () => {
+			const user = await createSeedUser();
+			const req = {
+				user: { _id: user._id },
+				body: { DOB: "01-01-2000" },
+			};
+			const res = createResponse();
+
+			await updateProfileController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid DOB format. Please use YYYY-MM-DD",
 			});
 		});
 

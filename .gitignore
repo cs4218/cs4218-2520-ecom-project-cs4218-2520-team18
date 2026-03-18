@@ -3,5 +3,14 @@ node_modules
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright/
+playwright/.auth/
 .env
 coverage/
+
+# local tooling artifacts
+.scannerwork/
+
+# editor settings
+.vscode/
+.idea/

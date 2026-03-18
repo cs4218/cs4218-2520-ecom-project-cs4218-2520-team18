@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { MemoryRouter } from "react-router-dom";
 import Profile from "./Profile";
 import { AuthProvider } from "../../context/auth";
+import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
 jest.mock("react-hot-toast", () => ({
@@ -45,6 +46,7 @@ describe("Profile Component - Integration Tests", () => {
 		);
 
 	beforeEach(() => {
+		jest.restoreAllMocks();
 		jest.clearAllMocks();
 		localStorage.clear();
 		setItemSpy = jest.spyOn(Storage.prototype, "setItem");
@@ -110,9 +112,69 @@ describe("Profile Component - Integration Tests", () => {
 			expect(setItemSpy).toHaveBeenCalledWith("auth", expect.stringContaining('"name":"Norbert Updated"'));
 			expect(toast.success).toHaveBeenCalledWith("Profile Updated Successfully");
 		});
+
+		test("update button is disabled while request is in-flight and re-enabled afterward", async () => {
+			let resolveRequest;
+			const pendingRequest = new Promise((resolve) => {
+				resolveRequest = resolve;
+			});
+			axios.put.mockReturnValueOnce(pendingRequest);
+
+			renderProfile();
+
+			const button = await screen.findByRole("button", { name: /update/i });
+			expect(button).not.toBeDisabled();
+
+			fireEvent.click(button);
+
+			await waitFor(() => expect(button).toBeDisabled());
+
+			resolveRequest({
+				data: {
+					success: true,
+					updatedUser: mockInitialUser,
+				},
+			});
+
+			await waitFor(() => expect(button).not.toBeDisabled());
+		});
 	});
 
 	describe("Validation & Negative Paths", () => {
+		test("blocks submission when name exceeds 100 characters", async () => {
+			renderProfile();
+
+			await waitFor(() => {
+				fireEvent.change(screen.getByPlaceholderText("Enter Your Name"), {
+					target: { value: "N".repeat(101) },
+				});
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when phone is empty", async () => {
+			renderProfile();
+
+			await waitFor(() => {
+				fireEvent.change(screen.getByPlaceholderText("Enter Your Phone Number"), {
+					target: { value: "" },
+				});
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Phone number is required");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
 		test("blocks submission for invalid phone format", async () => {
 			renderProfile();
 
@@ -126,6 +188,79 @@ describe("Profile Component - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when DOB is empty", async () => {
+			renderProfile();
+
+			await waitFor(() => {
+				fireEvent.change(screen.getByPlaceholderText("Enter Your DOB"), {
+					target: { value: "" },
+				});
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Date of Birth is required");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when DOB format validator fails", async () => {
+			jest.spyOn(validationHelpers, "isValidDOBFormat").mockReturnValue(false);
+
+			renderProfile();
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when DOB strict validator fails", async () => {
+			jest.spyOn(validationHelpers, "isValidDOBFormat").mockReturnValue(true);
+			jest.spyOn(validationHelpers, "isValidDOBStrict").mockReturnValue(false);
+
+			renderProfile();
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when DOB is in the future", async () => {
+			jest.spyOn(validationHelpers, "isValidDOBFormat").mockReturnValue(true);
+			jest.spyOn(validationHelpers, "isValidDOBStrict").mockReturnValue(true);
+			jest.spyOn(validationHelpers, "isDOBNotFuture").mockReturnValue(false);
+
+			renderProfile();
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Date of Birth cannot be in the future");
+			});
+			expect(axios.put).not.toHaveBeenCalled();
+		});
+
+		test("blocks submission when address is empty", async () => {
+			renderProfile();
+
+			await waitFor(() => {
+				fireEvent.change(screen.getByPlaceholderText("Enter Your Address"), {
+					target: { value: "   " },
+				});
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Address is required");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -168,6 +303,34 @@ describe("Profile Component - Integration Tests", () => {
 
 			const authWrites = setItemSpy.mock.calls.filter((call) => call[0] === "auth");
 			expect(authWrites.length).toBe(1);
+		});
+
+		test("handles backend success=false with message field", async () => {
+			axios.put.mockResolvedValueOnce({
+				data: { success: false, message: "Profile validation failed" },
+			});
+
+			renderProfile();
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(axios.put).toHaveBeenCalled();
+				expect(toast.error).toHaveBeenCalledWith("Profile validation failed");
+			});
+		});
+
+		test("uses default backend failure message when response has no error or message", async () => {
+			axios.put.mockResolvedValueOnce({
+				data: { success: false },
+			});
+
+			renderProfile();
+			fireEvent.click(screen.getByRole("button", { name: /update/i }));
+
+			await waitFor(() => {
+				expect(axios.put).toHaveBeenCalled();
+				expect(toast.error).toHaveBeenCalledWith("Profile Update Failed");
+			});
 		});
 	});
 

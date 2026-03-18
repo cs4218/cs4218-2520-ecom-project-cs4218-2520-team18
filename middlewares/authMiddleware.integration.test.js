@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import userModel from "../models/userModel.js";
 import { isAdmin, requireSignIn } from "./authMiddleware.js";
+import { updateProfileController } from "../controllers/userController.js";
 
 jest.setTimeout(30000);
 
@@ -87,6 +88,49 @@ describe("authMiddleware - Integration Tests", () => {
 			expect(findByIdSpy).toHaveBeenCalledWith(adminUser._id.toString());
 			expect(next).toHaveBeenCalledTimes(1);
 			expect(res.send).not.toHaveBeenCalled();
+		});
+
+		test("requireSignIn attaches req.user that updateProfileController consumes for profile update", async () => {
+			const user = await seedUser({
+				name: "Auth Chain User",
+				address: "Old Address",
+				phone: "+14155552671",
+				DOB: "2000-01-01",
+			});
+			const token = signToken({ _id: user._id.toString() });
+			const req = {
+				headers: { authorization: `Bearer ${token}` },
+				body: { name: "Updated Via Middleware", address: "Updated Address" },
+			};
+			const middlewareRes = createResponse();
+
+			const next = jest.fn();
+			await requireSignIn(req, middlewareRes, next);
+
+			expect(next).toHaveBeenCalledTimes(1);
+			expect(req.user).toBeDefined();
+			expect(req.user._id).toBe(user._id.toString());
+
+			const controllerRes = createResponse();
+			await updateProfileController(req, controllerRes);
+
+			expect(controllerRes.status).toHaveBeenCalledWith(200);
+			expect(controllerRes.send).toHaveBeenCalledTimes(1);
+			const controllerPayload = controllerRes.send.mock.calls[0][0];
+			expect(controllerPayload).toEqual(
+				expect.objectContaining({
+					success: true,
+					message: "Profile Updated Successfully",
+				}),
+			);
+			expect(controllerPayload.updatedUser).toBeDefined();
+
+			const updatedUser = await userModel.findById(user._id);
+			expect(updatedUser).not.toBeNull();
+			expect(updatedUser.name).toBe("Updated Via Middleware");
+			expect(updatedUser.address).toBe("Updated Address");
+			expect(updatedUser.phone).toBe("+14155552671");
+			expect(updatedUser.DOB).toBe("2000-01-01");
 		});
 	});
 

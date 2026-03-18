@@ -106,6 +106,18 @@ describe("Register - Integration Tests", () => {
 	});
 
 	describe("Validation / Negative Paths (Guardrails)", () => {
+		test("empty name shows toast.error and blocks axios.post", async () => {
+			renderRegister();
+			typeAllFields({ name: "" });
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+			expect(mockNavigate).not.toHaveBeenCalled();
+		});
+
 		test("invalid email shows toast.error and blocks axios.post", async () => {
 			const emailSpy = jest.spyOn(validationHelpers, "isValidEmail");
 
@@ -131,6 +143,46 @@ describe("Register - Integration Tests", () => {
 			await waitFor(() => {
 				expect(passwordSpy).toHaveBeenCalledWith("123", 6);
 				expect(toast.error).toHaveBeenCalledWith("Password must be at least 6 characters long");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+		});
+
+		test("invalid phone shows toast.error and blocks axios.post", async () => {
+			const phoneSpy = jest.spyOn(validationHelpers, "isValidPhone").mockReturnValue(false);
+
+			renderRegister();
+			typeAllFields({ phone: "+14155552671" });
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(phoneSpy).toHaveBeenCalledWith("+14155552671");
+				expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+		});
+
+		test("invalid calendar DOB shows toast.error and blocks axios.post", async () => {
+			jest.spyOn(validationHelpers, "isValidDOBFormat").mockReturnValue(true);
+			const dobStrictSpy = jest.spyOn(validationHelpers, "isValidDOBStrict").mockReturnValue(false);
+
+			renderRegister();
+			typeAllFields({ dob: "2000-01-01" });
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(dobStrictSpy).toHaveBeenCalledWith("2000-01-01");
+				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be a valid date");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+		});
+
+		test("missing answer shows toast.error and blocks axios.post", async () => {
+			renderRegister();
+			typeAllFields({ answer: "" });
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Answer is required");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -237,6 +289,46 @@ describe("Register - Integration Tests", () => {
 			await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(apiError));
 			const consolePayload = JSON.stringify(consoleSpy.mock.calls);
 			expect(consolePayload).not.toContain(plainPassword);
+			consoleSpy.mockRestore();
+		});
+
+		test("uses backend error message when axios rejects with response.data.message", async () => {
+			const apiError = {
+				response: {
+					data: {
+						message: "Email already exists",
+					},
+				},
+			};
+			const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+			axios.post.mockRejectedValueOnce(apiError);
+
+			renderRegister();
+			typeAllFields();
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(consoleSpy).toHaveBeenCalledWith(apiError);
+				expect(toast.error).toHaveBeenCalledWith("Email already exists");
+			});
+			expect(mockNavigate).not.toHaveBeenCalled();
+			consoleSpy.mockRestore();
+		});
+
+		test("uses strict fallback message when axios rejects without response/message", async () => {
+			const unknownError = {};
+			const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+			axios.post.mockRejectedValueOnce(unknownError);
+
+			renderRegister();
+			typeAllFields();
+			fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+			await waitFor(() => {
+				expect(consoleSpy).toHaveBeenCalledWith(unknownError);
+				expect(toast.error).toHaveBeenCalledWith("Something went wrong");
+			});
+			expect(mockNavigate).not.toHaveBeenCalled();
 			consoleSpy.mockRestore();
 		});
 	});

@@ -111,6 +111,28 @@ describe("ForgotPassword - Integration Tests", () => {
 			expect(axios.post).not.toHaveBeenCalled();
 		});
 
+		test("missing security answer triggers toast and blocks network call", async () => {
+			renderForgotPassword();
+			typeFields({ answer: "" });
+			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Security answer is required");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+		});
+
+		test("missing new password triggers toast and blocks network call", async () => {
+			renderForgotPassword();
+			typeFields({ newPassword: "" });
+			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("New password is required");
+			});
+			expect(axios.post).not.toHaveBeenCalled();
+		});
+
 		test("short password triggers toast and blocks network call", async () => {
 			const passwordSpy = jest.spyOn(validationHelpers, "isPasswordLongEnough");
 
@@ -214,6 +236,22 @@ describe("ForgotPassword - Integration Tests", () => {
 			const consolePayload = JSON.stringify(consoleSpy.mock.calls);
 			expect(consolePayload).not.toContain(plainPassword);
 			expect(toast.error).toHaveBeenCalledWith("Network Error");
+			consoleSpy.mockRestore();
+		});
+
+		test("uses strict fallback error message when error has no response and no message", async () => {
+			const unknownError = {};
+			const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+			axios.post.mockRejectedValueOnce(unknownError);
+
+			renderForgotPassword();
+			typeFields();
+			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
+
+			await waitFor(() => {
+				expect(consoleSpy).toHaveBeenCalledWith(unknownError);
+				expect(toast.error).toHaveBeenCalledWith("An unexpected error occurred");
+			});
 			consoleSpy.mockRestore();
 		});
 	});

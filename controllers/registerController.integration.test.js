@@ -103,6 +103,23 @@ describe("registerController - Integration Tests", () => {
 	});
 
 	describe("Validation & Negative Paths", () => {
+		test("returns 400 and stops when validateEmail fails", async () => {
+			const req = { body: buildValidBody({ email: "not-an-email" }) };
+			const res = createResponse();
+
+			jest.spyOn(validationHelper, "validateEmail").mockReturnValue(false);
+			const findOneSpy = jest.spyOn(userModel, "findOne");
+
+			await registerController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid Email Format",
+			});
+			expect(findOneSpy).not.toHaveBeenCalled();
+		});
+
 		test.each([
 			["name", "Name is Required"],
 			["email", "Email is Required"],
@@ -140,6 +157,23 @@ describe("registerController - Integration Tests", () => {
 			expect(res.send).toHaveBeenCalledWith({
 				success: false,
 				message: "Invalid Phone Number",
+			});
+			expect(findOneSpy).not.toHaveBeenCalled();
+		});
+
+		test("returns 400 and stops when validatePassword fails", async () => {
+			const req = { body: buildValidBody({ password: "123" }) };
+			const res = createResponse();
+
+			jest.spyOn(validationHelper, "validatePassword").mockReturnValue(false);
+			const findOneSpy = jest.spyOn(userModel, "findOne");
+
+			await registerController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Password must be at least 6 characters long",
 			});
 			expect(findOneSpy).not.toHaveBeenCalled();
 		});
