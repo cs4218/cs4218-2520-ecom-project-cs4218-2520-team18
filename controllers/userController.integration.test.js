@@ -371,6 +371,45 @@ describe("updateProfileController - Integration Tests", () => {
 			});
 		});
 
+		test.each([
+			["name", "   ", "Name cannot be empty"],
+			["password", "", "Password cannot be empty"],
+			["phone", "   ", "Phone cannot be empty"],
+			["DOB", "   ", "DOB cannot be empty"],
+		])("returns 400 when %s is empty after trimming", async (field, value, expectedMessage) => {
+			const user = await createSeedUser();
+			const req = {
+				user: { _id: user._id },
+				body: { [field]: value },
+			};
+			const res = createResponse();
+
+			await updateProfileController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: expectedMessage,
+			});
+		});
+
+		test("returns 400 for invalid DOB format", async () => {
+			const user = await createSeedUser();
+			const req = {
+				user: { _id: user._id },
+				body: { DOB: "01-01-2000" },
+			};
+			const res = createResponse();
+
+			await updateProfileController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid DOB format. Please use YYYY-MM-DD",
+			});
+		});
+
 		test("returns 400 for short password", async () => {
 			const user = await createSeedUser();
 			const req = {
