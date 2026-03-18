@@ -13,7 +13,8 @@
     "test:frontend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.frontend.config.js",
     "test:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js",
     "test:integration:frontend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.frontend.config.js --testPathPattern=integration\\.test\\.js --passWithNoTests",
-    "test:integration:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js --testPathPattern=integration\\.test\\.js"
+    "test:integration:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js --testPathPattern=integration\\.test\\.js",
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "RP",
