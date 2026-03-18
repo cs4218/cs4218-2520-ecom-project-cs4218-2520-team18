@@ -1,8 +1,9 @@
 import express from "express";
-import colors from "colors";
+import "colors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import connectDB from "./config/db.js";
+import seedAdminUser from "./scripts/seedAdminUser.js";
 import authRoutes from './routes/authRoute.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -30,12 +31,21 @@ app.get('/', (req,res) => {
 });
 
 const PORT = process.env.PORT || 6060;
+const shouldRunE2ESeed = process.env.E2E_SEED_ADMIN === "true";
 
 const startServer = async () => {
-    await connectDB();
-    app.listen(PORT, () => {
-        console.log(`Server running on ${process.env.DEV_MODE} mode on ${PORT}`.bgCyan.white);
-    });
+    try {
+        await connectDB();
+        if (shouldRunE2ESeed) {
+            await seedAdminUser();
+        }
+        app.listen(PORT, () => {
+            console.log(`Server running on ${process.env.DEV_MODE} mode on ${PORT}`.bgCyan.white);
+        });
+    } catch (error) {
+        console.log(`Error starting server: ${error}`.bgRed.white);
+        process.exit(1);
+    }
 };
 
 startServer();
