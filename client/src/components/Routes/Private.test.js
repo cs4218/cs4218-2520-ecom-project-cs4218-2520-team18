@@ -49,7 +49,14 @@ describe("Private Route Unit Tests", () => {
 
       // Assert
       await waitFor(() => {
-        expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+        expect(axios.get).toHaveBeenCalledWith(
+          "/api/v1/auth/user-auth",
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: "test-token",
+            }),
+          }),
+        );
       });
 
       await waitFor(() => {
@@ -110,7 +117,14 @@ describe("Private Route Unit Tests", () => {
 
       // Assert
       await waitFor(() => {
-        expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+        expect(axios.get).toHaveBeenCalledWith(
+          "/api/v1/auth/user-auth",
+          expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: "expired-token",
+            }),
+          }),
+        );
       });
 
       await waitFor(() => {

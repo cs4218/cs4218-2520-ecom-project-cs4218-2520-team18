@@ -72,7 +72,14 @@ describe("PrivateRoute - Integration Tests", () => {
 			renderProtectedDashboard();
 
 			await waitFor(() => {
-				expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+				expect(axios.get).toHaveBeenCalledWith(
+					"/api/v1/auth/user-auth",
+					expect.objectContaining({
+						headers: expect.objectContaining({
+							Authorization: "valid-token",
+						}),
+					}),
+				);
 			});
 
 			await waitFor(() => {
@@ -91,7 +98,14 @@ describe("PrivateRoute - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(axios.get).toHaveBeenCalledTimes(1);
-				expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+				expect(axios.get).toHaveBeenCalledWith(
+					"/api/v1/auth/user-auth",
+					expect.objectContaining({
+						headers: expect.objectContaining({
+							Authorization: "valid-token",
+						}),
+					}),
+				);
 			});
 
 			await waitFor(() => {

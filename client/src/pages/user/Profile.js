@@ -43,10 +43,13 @@ const Profile = () => {
       const payload = {
         name: name.trim(),
         email: email,
-        password,
         phone: phone.trim(),
         address: address.trim(),
+        DOB: DOB.trim(),
       };
+      if (password) {
+        payload.password = password;
+      }
 
       // client-side validation
       if (!payload.name || payload.name.length > 100) {
@@ -80,7 +83,7 @@ const Profile = () => {
         return;
       }
       if (!isDOBNotFuture(DOB)) {
-        toast.error("Date of Birth cannot be in the future");
+        toast.error("DOB cannot be in the future");
         return;
       }
 
