@@ -106,6 +106,7 @@ describe("Profile Component - Integration Tests", () => {
 					password: "newpassword123",
 					phone: "+6591234567",
 					address: "PGP Residences",
+					DOB: "2000-01-01",
 				});
 			});
 
@@ -243,7 +244,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth cannot be in the future");
+				expect(toast.error).toHaveBeenCalledWith("DOB cannot be in the future");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});

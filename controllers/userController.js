@@ -72,7 +72,9 @@ export const updateProfileController = async (req, res) => {
       },
       { new: true }
     );
-    const { password: _password, ...updatedUserSensitive } = updatedUser;
+    // Convert to plain object before destructuring, fallback to plain object if toObject doesn't exist (e.g., in mocked tests)
+    const updatedUserObj = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+    const { password: _password, ...updatedUserSensitive } = updatedUserObj;
     return res.status(200).send({
       success: true,
       message: "Profile Updated Successfully",
