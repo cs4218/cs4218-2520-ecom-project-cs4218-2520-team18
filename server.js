@@ -6,7 +6,9 @@ import connectDB from "./config/db.js";
 import authRoutes from './routes/authRoute.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
+import orderRoutes from './routes/orderRoute.js'
 import cors from "cors";
+import { seedTestData } from "./config/seedTestData.js";
 
 // configure env
 dotenv.config();
@@ -20,6 +22,7 @@ app.use(morgan('dev'));
 
 //routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth", orderRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
 
@@ -33,6 +36,9 @@ const PORT = process.env.PORT || 6060;
 
 const startServer = async () => {
     await connectDB();
+    if (process.env.USE_IN_MEMORY_MONGO === "true") {
+        await seedTestData();
+    }
     app.listen(PORT, () => {
         console.log(`Server running on ${process.env.DEV_MODE} mode on ${PORT}`.bgCyan.white);
     });
