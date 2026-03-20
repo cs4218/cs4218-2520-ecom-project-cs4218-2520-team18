@@ -1,4 +1,5 @@
 // Aw Jean Leng Adrian, A0277537N
+// Billy Ho Cheng En, A0252588R
 
 import {
   getOrdersController,
@@ -147,7 +148,7 @@ describe("getAllOrdersController", () => {
         expect(orderModel.find).toHaveBeenCalledWith({});
         expect(mockQuery.populate).toHaveBeenCalledWith("products", "-photo");
         expect(mockQuery.populate).toHaveBeenCalledWith("buyer", "name");
-        expect(mockQuery.sort).toHaveBeenCalledWith({ createdAt: "-1" });
+        expect(mockQuery.sort).toHaveBeenCalledWith({ createdAt: -1 });
         expect(res.json).toHaveBeenCalledWith(mockOrders);
     });
 
@@ -214,7 +215,7 @@ describe("orderStatusController", () => {
     });
 
     test("should update to different status values", async () => {
-        const statuses = ["Processing", "Shipped", "Delivered", "Cancelled"];
+        const statuses = ["Not Processed", "Processing", "Shipped", "Delivered", "Cancelled"];
 
         for (const status of statuses) {
             jest.clearAllMocks();
@@ -243,7 +244,24 @@ describe("orderStatusController", () => {
 
         await orderStatusController(req, res);
 
-        expect(res.json).toHaveBeenCalledWith(null);
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.send).toHaveBeenCalledWith({
+            success: false,
+            message: "Order not found",
+        });
+    });
+
+    test("should return 400 for invalid status value", async () => {
+        req.body.status = "InvalidStatus";
+
+        await orderStatusController(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.send).toHaveBeenCalledWith({
+            success: false,
+            message: "Invalid status value",
+        });
+        expect(orderModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
 
     test("should handle database errors", async () => {
