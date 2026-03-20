@@ -45,8 +45,12 @@ const ProductDetails = () => {
             src={`/api/v1/product/product-photo/${product._id}`}
             className="card-img-top"
             alt={product.name}
-            height="300"
-            width={"350px"}
+            style={{
+              width: "100%",
+              maxWidth: "350px",
+              height: "auto",
+              objectFit: "contain"
+            }}
           />
         </div>
         <div className="col-md-6 product-details-info">

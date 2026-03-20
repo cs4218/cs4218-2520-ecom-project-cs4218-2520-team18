@@ -6,7 +6,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
-import { updateProfileController } from "./userController.js";
+import { updateProfileController, getAllUsersController } from "./userController.js";
 import { registerController } from "./registerController.js";
 
 jest.setTimeout(30000);
@@ -534,6 +534,205 @@ describe("updateProfileController - Integration Tests", () => {
 				success: false,
 				message: "Error while updating profile",
                 error: dbError,
+			});
+
+			consoleSpy.mockRestore();
+		});
+	});
+});
+
+// Billy Ho Cheng En, A0252588R
+describe("getAllUsersController - Integration Tests", () => {
+	let mongoServer;
+	let userCounter = 0;
+
+	const createResponse = () => ({
+		status: jest.fn().mockReturnThis(),
+		send: jest.fn(),
+		json: jest.fn(),
+	});
+
+	const seedUser = async (overrides = {}) => {
+		userCounter += 1;
+		const plainPassword = overrides.password ?? "TestPassword123";
+		const hashedPassword = await authHelper.hashPassword(plainPassword);
+
+		return userModel.create({
+			name: `Test User ${userCounter}`,
+			email: `user.getall.${userCounter}.${Date.now()}@example.com`,
+			password: hashedPassword,
+			phone: "+14155552671",
+			address: "123 Test Street",
+			answer: "blue",
+			DOB: "2000-01-01",
+			role: 0,
+			...overrides,
+			password: hashedPassword,
+		});
+	};
+
+	beforeAll(async () => {
+		mongoServer = await MongoMemoryServer.create();
+		const mongoUri = mongoServer.getUri();
+		await mongoose.connect(mongoUri, {
+			dbName: "get-all-users-integration-tests",
+		});
+	});
+
+	beforeEach(async () => {
+		await userModel.deleteMany({});
+		userCounter = 0;
+		jest.restoreAllMocks();
+	});
+
+	afterAll(async () => {
+		await mongoose.connection.dropDatabase();
+		await mongoose.connection.close();
+		await mongoServer.stop();
+	});
+
+	describe("Successful Retrieval", () => {
+		test("returns all users when users exist in database", async () => {
+			await seedUser({ name: "User One", email: "one@example.com" });
+			await seedUser({ name: "User Two", email: "two@example.com" });
+			await seedUser({ name: "User Three", email: "three@example.com" });
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			expect(responseData.success).toBe(true);
+			expect(responseData.users).toHaveLength(3);
+		});
+
+		test("returns empty array when no users exist", async () => {
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			expect(responseData.success).toBe(true);
+			expect(responseData.users).toHaveLength(0);
+		});
+
+		test("returns users sorted by createdAt descending (newest first)", async () => {
+			const user1 = await seedUser({ name: "First User" });
+			// Small delay to ensure different timestamps
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			const user2 = await seedUser({ name: "Second User" });
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			const user3 = await seedUser({ name: "Third User" });
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			expect(responseData.users[0].name).toBe("Third User");
+			expect(responseData.users[1].name).toBe("Second User");
+			expect(responseData.users[2].name).toBe("First User");
+		});
+	});
+
+	describe("Security / Privacy Boundaries", () => {
+		test("excludes password field from response", async () => {
+			await seedUser({ name: "Secure User" });
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			const user = responseData.users[0].toObject ? responseData.users[0].toObject() : responseData.users[0];
+			expect(user.password).toBeUndefined();
+		});
+
+		test("excludes answer (security question) field from response", async () => {
+			await seedUser({ name: "Secure User", answer: "secret-answer" });
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			const user = responseData.users[0].toObject ? responseData.users[0].toObject() : responseData.users[0];
+			expect(user.answer).toBeUndefined();
+		});
+
+		test("returns user fields: name, email, phone, role, address", async () => {
+			await seedUser({
+				name: "Complete User",
+				email: "complete@example.com",
+				phone: "+14155559999",
+				role: 1,
+				address: "456 Complete St",
+			});
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			const user = responseData.users[0];
+			expect(user.name).toBe("Complete User");
+			expect(user.email).toBe("complete@example.com");
+			expect(user.phone).toBe("+14155559999");
+			expect(user.role).toBe(1);
+			expect(user.address).toBe("456 Complete St");
+		});
+	});
+
+	describe("User Role Handling", () => {
+		test("returns both admin (role=1) and regular (role=0) users", async () => {
+			await seedUser({ name: "Regular User", role: 0 });
+			await seedUser({ name: "Admin User", role: 1 });
+
+			const req = {};
+			const res = createResponse();
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(200);
+			const responseData = res.send.mock.calls[0][0];
+			expect(responseData.users).toHaveLength(2);
+
+			const roles = responseData.users.map((u) => u.role);
+			expect(roles).toContain(0);
+			expect(roles).toContain(1);
+		});
+	});
+
+	describe("Error Handling", () => {
+		test("returns 500 when database throws an error", async () => {
+			const req = {};
+			const res = createResponse();
+			const dbError = new Error("Database connection failed");
+			const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+			jest.spyOn(userModel, "find").mockImplementation(() => {
+				throw dbError;
+			});
+
+			await getAllUsersController(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Error while getting all users",
+				error: dbError,
 			});
 
 			consoleSpy.mockRestore();

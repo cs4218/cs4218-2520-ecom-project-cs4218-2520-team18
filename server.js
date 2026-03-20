@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import connectDB from "./config/db.js";
 import seedAdminUser from "./scripts/seedAdminUser.js";
+import seedTestData from "./scripts/seedTestData.js";
 import authRoutes from './routes/authRoute.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -34,12 +35,16 @@ app.get('/', (req,res) => {
 
 const PORT = process.env.PORT || 6060;
 const shouldRunE2ESeed = process.env.E2E_SEED_ADMIN === "true";
+const shouldSeedTestData = process.env.E2E_SEED_TEST_DATA === "true";
 
 const startServer = async () => {
     try {
         await connectDB();
         if (shouldRunE2ESeed) {
             await seedAdminUser();
+        }
+        if (shouldSeedTestData) {
+            await seedTestData();
         }
         app.listen(PORT, () => {
             console.log(`Server running on ${process.env.DEV_MODE} mode on ${PORT}`.bgCyan.white);
