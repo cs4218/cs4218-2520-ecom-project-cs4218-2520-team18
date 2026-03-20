@@ -6,6 +6,7 @@ test.describe("Browsing E2E flows", () => {
   test("Flow 1: Categories → Choose Category → View Products → View Product Details", async ({ page }) => {
     // Start at home page
     await page.goto("/");
+    await page.waitForTimeout(500); // Wait for page to load
 
     // User clicks on "Categories" dropdown in navigation header
     const categoriesDropdown = page.locator('.nav-link.dropdown-toggle:has-text("Categories")');
@@ -27,6 +28,7 @@ test.describe("Browsing E2E flows", () => {
     expect(chosenCategoryName?.trim().length).toBeGreaterThan(0);
 
     await chosenCategoryItem.click();
+    await page.waitForTimeout(500); // Wait for category page to load
 
     // Assert: Should navigate to category-specific page
     await expect(page).toHaveURL(/\/category\/.+/);
@@ -60,6 +62,7 @@ test.describe("Browsing E2E flows", () => {
 
       // Click More Details button
       await firstProduct.locator('button:has-text("More Details")').click();
+      await page.waitForTimeout(500); // Wait for product details page to load
 
       // Assert: Should navigate to product details page
       await expect(page).toHaveURL(/\/product\/.+/);
@@ -105,14 +108,14 @@ test.describe("Browsing E2E flows", () => {
       await expect(page.getByRole("button", { name: "ADD TO CART" })).toBeVisible();
 
       // Assert: Similar products section should be present
-      await expect(page.locator('.similar-products')).toBeVisible();
-      await expect(page.getByText(/Similar Products/)).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Similar Products/ })).toBeVisible();
     }
   });
 
   test("Flow 2: Categories → All Categories → Categories Page → Choose Category → View Products → View Product Details", async ({ page }) => {
     // Start at home page
     await page.goto("/");
+    await page.waitForTimeout(500); // Wait for page to load
 
     // User clicks on "Categories" dropdown in navigation
     const categoriesDropdown = page.locator('.nav-link.dropdown-toggle:has-text("Categories")');
@@ -134,12 +137,13 @@ test.describe("Browsing E2E flows", () => {
 
     // User clicks "All Categories"
     await allCategoriesLink.click();
+    await page.waitForTimeout(500); // Wait for categories page to load
 
     // Assert: Should navigate to /categories page
     await expect(page).toHaveURL("/categories");
 
     // Assert: "All Categories" heading should be visible
-    await expect(page.getByText("All Categories")).toBeVisible();
+    await expect(page.getByRole('heading', { name: "All Categories" })).toBeVisible();
 
     // Assert: Categories should be rendered as clickable buttons
     const categoryButtons = page.locator('.btn.btn-primary');
@@ -152,6 +156,7 @@ test.describe("Browsing E2E flows", () => {
     expect(chosenCategoryName?.trim().length).toBeGreaterThan(0);
 
     await firstCategoryButton.click();
+    await page.waitForTimeout(500); // Wait for category page to load
 
     // Assert: Should navigate to category-specific page
     await expect(page).toHaveURL(/\/category\/.+/);
@@ -185,6 +190,7 @@ test.describe("Browsing E2E flows", () => {
 
       // Click More Details
       await firstProductCard.locator('button:has-text("More Details")').click();
+      await page.waitForTimeout(500); // Wait for product details page to load
 
       // Assert: Should navigate to product details page
       await expect(page).toHaveURL(/\/product\/.+/);
@@ -226,7 +232,7 @@ test.describe("Browsing E2E flows", () => {
       await expect(page.getByRole("button", { name: "ADD TO CART" })).toBeVisible();
 
       // Assert: Similar products section should be present
-      await expect(page.locator('.similar-products')).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Similar Products/ })).toBeVisible();
     }
   });
 });
