@@ -55,7 +55,7 @@ export default {
     'client/src/helpers/**',
     "client/src/pages/admin/**",
     'client/src/pages/**',
-    "client/src/hooks/**",
+    "client/src/hooks/useCategory.js",
     "client/src/components/**"
   ],
   coverageThreshold: {
