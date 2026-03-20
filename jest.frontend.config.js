@@ -41,6 +41,7 @@ export default {
     '<rootDir>/helpers/',
     '<rootDir>/middlewares/',
     '<rootDir>/models/',
+    '<rootDir>/client/src/hooks/.*\\.integration\\.test\\.js$',
   ],
 
   // jest code coverage

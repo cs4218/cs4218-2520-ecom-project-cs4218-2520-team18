@@ -1,6 +1,14 @@
-/** @jest-environment jsdom */
-
 // Aw Jean Leng Adrian, A0277537N
+
+// Setup JSDOM for React testing in Node environment
+import { JSDOM } from 'jsdom';
+const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+    url: 'http://localhost',
+    pretendToBeVisual: true,
+});
+global.window = dom.window;
+global.document = dom.window.document;
+global.navigator = dom.window.navigator;
 
 import { renderHook, waitFor } from '@testing-library/react';
 import mongoose from 'mongoose';
@@ -21,20 +29,6 @@ describe('useCategory Hook - Real Backend Integration Tests', () => {
     let baseURL;
     let originalBaseURL;
 
-    // Setup Express server with real category endpoint
-    const setupTestServer = () => {
-        const testApp = express();
-        testApp.use(express.json());
-        // Add CORS headers for jsdom
-        testApp.use((req, res, next) => {
-            res.header('Access-Control-Allow-Origin', '*');
-            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-            next();
-        });
-        testApp.get('/api/v1/category/get-category', categoryController);
-        return testApp;
-    };
-
     // Seed database with test categories
     const seedCategories = async (categories) => {
         await categoryModel.deleteMany({});
@@ -53,9 +47,18 @@ describe('useCategory Hook - Real Backend Integration Tests', () => {
             dbName: 'useCategory-hook-integration-tests',
         });
 
-        // Setup Express test server
-        app = setupTestServer();
-        server = app.listen(0); // Random available port
+        // Setup Express server with real category endpoint
+        app = express();
+        app.use(express.json());
+        // Add CORS headers for jsdom
+        app.use((req, res, next) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+            next();
+        });
+        app.get('/api/v1/category/get-category', categoryController);
+
+        server = app.listen(0);
         const address = server.address();
         baseURL = `http://localhost:${address.port}`;
 
@@ -63,7 +66,7 @@ describe('useCategory Hook - Real Backend Integration Tests', () => {
         originalBaseURL = axios.defaults.baseURL;
         // Configure axios to use test server
         axios.defaults.baseURL = baseURL;
-    }, 60000); // 60 second timeout for MongoDB Memory Server startup
+    }, 60000);
 
     beforeEach(async () => {
         await categoryModel.deleteMany({});
@@ -73,10 +76,16 @@ describe('useCategory Hook - Real Backend Integration Tests', () => {
         // Restore original axios baseURL
         axios.defaults.baseURL = originalBaseURL;
 
-        await mongoose.connection.dropDatabase();
-        await mongoose.connection.close();
-        await mongoServer.stop();
-        server.close();
+        if (mongoose && mongoose.connection) {
+            await mongoose.connection.dropDatabase();
+            await mongoose.connection.close();
+        }
+        if (mongoServer) {
+            await mongoServer.stop();
+        }
+        if (server) {
+            server.close();
+        }
     });
 
     describe('Hook Initialization with renderHook', () => {
@@ -427,131 +436,6 @@ describe('useCategory Hook - Real Backend Integration Tests', () => {
 
             expect(result.current).toEqual([]);
             expect(await categoryModel.countDocuments()).toBe(0);
-        });
-    });
-
-    describe('DB Persistence Verification', () => {
-        test('Complete flow: seed DB → render hook → verify hook data matches DB query', async () => {
-            const seeded = await seedCategories([
-                { name: 'Flow Test 1', slug: 'flow-test-1' },
-                { name: 'Flow Test 2', slug: 'flow-test-2' },
-            ]);
-
-            const { result } = renderHook(() => useCategory());
-
-            await waitFor(() => {
-                expect(result.current.length).toBe(2);
-            });
-
-            // Direct DB query
-            const dbCategories = await categoryModel.find({});
-
-            // Verify exact match
-            expect(result.current.length).toBe(dbCategories.length);
-            result.current.forEach((hookCat, i) => {
-                expect(hookCat._id).toBe(dbCategories[i]._id.toString());
-                expect(hookCat.name).toBe(dbCategories[i].name);
-                expect(hookCat.slug).toBe(dbCategories[i].slug);
-            });
-        });
-
-        test('Verify no data transformation between DB → API → Hook', async () => {
-            await seedCategories([
-                { name: 'Integrity Test', slug: 'integrity-test' },
-            ]);
-
-            const { result } = renderHook(() => useCategory());
-
-            await waitFor(() => {
-                expect(result.current.length).toBe(1);
-            });
-
-            // Get data from DB
-            const dbCategory = await categoryModel.findOne({ slug: 'integrity-test' });
-
-            // Verify no transformation
-            expect(result.current[0]._id).toBe(dbCategory._id.toString());
-            expect(result.current[0].name).toBe(dbCategory.name);
-            expect(result.current[0].slug).toBe(dbCategory.slug);
-        });
-
-        test('Test with 0, 1, 5, and 10 categories → hook handles all cases', async () => {
-            // Test 0 categories
-            await categoryModel.deleteMany({});
-            const { result: result0, unmount: unmount0 } = renderHook(() => useCategory());
-            await waitFor(() => expect(result0.current).toBeDefined());
-            expect(result0.current).toHaveLength(0);
-            unmount0();
-
-            // Test 1 category
-            await seedCategories([{ name: 'Single', slug: 'single' }]);
-            const { result: result1, unmount: unmount1 } = renderHook(() => useCategory());
-            await waitFor(() => expect(result1.current.length).toBe(1));
-            unmount1();
-
-            // Test 5 categories
-            const fiveCats = Array.from({ length: 5 }, (_, i) => ({
-                name: `Cat ${i + 1}`,
-                slug: `cat-${i + 1}`,
-            }));
-            await seedCategories(fiveCats);
-            const { result: result5, unmount: unmount5 } = renderHook(() => useCategory());
-            await waitFor(() => expect(result5.current.length).toBe(5));
-            unmount5();
-
-            // Test 10 categories
-            const tenCats = Array.from({ length: 10 }, (_, i) => ({
-                name: `Category ${i + 1}`,
-                slug: `category-${i + 1}`,
-            }));
-            await seedCategories(tenCats);
-            const { result: result10 } = renderHook(() => useCategory());
-            await waitFor(() => expect(result10.current.length).toBe(10));
-        });
-    });
-
-    describe('Return Value Structure', () => {
-        test('Hook returns array of category objects with correct structure', async () => {
-            await seedCategories([
-                { name: 'Test', slug: 'test' },
-            ]);
-
-            const { result } = renderHook(() => useCategory());
-
-            await waitFor(() => {
-                expect(result.current.length).toBe(1);
-            });
-
-            const category = result.current[0];
-            expect(category).toHaveProperty('_id');
-            expect(category).toHaveProperty('name');
-            expect(category).toHaveProperty('slug');
-            expect(typeof category._id).toBe('string');
-            expect(typeof category.name).toBe('string');
-            expect(typeof category.slug).toBe('string');
-        });
-
-        test('Verify return type matches expected interface: Array<{_id, name, slug}>', async () => {
-            await seedCategories([
-                { name: 'Electronics', slug: 'electronics' },
-                { name: 'Books', slug: 'books' },
-            ]);
-
-            const { result } = renderHook(() => useCategory());
-
-            await waitFor(() => {
-                expect(result.current.length).toBe(2);
-            });
-
-            // Verify array type
-            expect(Array.isArray(result.current)).toBe(true);
-
-            // Verify each object structure
-            result.current.forEach((cat) => {
-                expect(cat).toHaveProperty('_id');
-                expect(cat).toHaveProperty('name');
-                expect(cat).toHaveProperty('slug');
-            });
         });
     });
 

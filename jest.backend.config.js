@@ -13,6 +13,7 @@ export default {
     "<rootDir>/middlewares/*.test.js",
     "<rootDir>/models/*.test.js",
     "<rootDir>/routes/*.test.js",
+    "<rootDir>/client/src/hooks/*.integration.test.js",
   ],
 
   // jest code coverage
