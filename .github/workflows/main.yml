@@ -55,9 +55,9 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          BRAINTREE_MERCHANT_ID: "dummy_merchant"
-          BRAINTREE_PUBLIC_KEY: "dummy_public"
-          BRAINTREE_PRIVATE_KEY: "dummy_private"
+          BRAINTREE_MERCHANT_ID: ${{ secrets.BRAINTREE_MERCHANT_ID }}
+          BRAINTREE_PUBLIC_KEY: ${{ secrets.BRAINTREE_PUBLIC_KEY }}
+          BRAINTREE_PRIVATE_KEY: ${{ secrets.BRAINTREE_PRIVATE_KEY }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
