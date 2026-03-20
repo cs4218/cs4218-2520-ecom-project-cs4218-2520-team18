@@ -52,12 +52,34 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Debug environment
+        run: |
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "System info: $(uname -a)"
+          ls -la
+
+      - name: Test server startup
+        run: |
+          timeout 30s node server.js || true
+        env:
+          PORT: "6060"
+          DEV_MODE: "test"
+          JWT_SECRET: "test_jwt_secret"
+          USE_IN_MEMORY_MONGO: "true"
+          E2E_SEED_ADMIN: "true"
+          E2E_SEED_TEST_DATA: "true"
+          BRAINTREE_MERCHANT_ID: ${{ secrets.BRAINTREE_MERCHANT_ID }}
+          BRAINTREE_PUBLIC_KEY: ${{ secrets.BRAINTREE_PUBLIC_KEY }}
+          BRAINTREE_PRIVATE_KEY: ${{ secrets.BRAINTREE_PRIVATE_KEY }}
+
       - name: Run E2E tests
         run: npm run test:e2e
         env:
           BRAINTREE_MERCHANT_ID: ${{ secrets.BRAINTREE_MERCHANT_ID }}
           BRAINTREE_PUBLIC_KEY: ${{ secrets.BRAINTREE_PUBLIC_KEY }}
           BRAINTREE_PRIVATE_KEY: ${{ secrets.BRAINTREE_PRIVATE_KEY }}
+          NODE_OPTIONS: "--trace-warnings"
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
