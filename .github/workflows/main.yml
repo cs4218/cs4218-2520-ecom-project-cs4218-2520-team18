@@ -28,6 +28,7 @@ jobs:
         run: |
           cd client
           npm install
+          npm install --save-dev acorn-import-assertions
 
       - name: Run Jest tests for frontend
         run: npm run test:frontend
