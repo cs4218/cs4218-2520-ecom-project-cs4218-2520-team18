@@ -30,8 +30,6 @@ export default defineConfig({
       url: "http://127.0.0.1:6060/",
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
-      stdout: "pipe",
-      stderr: "pipe",
       env: {
         ...process.env,
         PORT: "6060",
@@ -40,12 +38,6 @@ export default defineConfig({
         USE_IN_MEMORY_MONGO: "true",
         E2E_SEED_ADMIN: "true",
         E2E_SEED_TEST_DATA: "true",
-        BRAINTREE_MERCHANT_ID: process.env.BRAINTREE_MERCHANT_ID || "dummy_merchant",
-        BRAINTREE_PUBLIC_KEY: process.env.BRAINTREE_PUBLIC_KEY || "dummy_public",
-        BRAINTREE_PRIVATE_KEY: process.env.BRAINTREE_PRIVATE_KEY || "dummy_private",
-        MONGOMS_DOWNLOAD_URL: "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2204-7.0.0.tgz",
-        MONGOMS_VERSION: "7.0.0",
-        DEBUG: process.env.CI ? "MongoMS:*" : undefined,
       },
     },
     {
@@ -53,8 +45,6 @@ export default defineConfig({
       url: "http://127.0.0.1:3000",
       timeout: 180_000,
       reuseExistingServer: !process.env.CI,
-      stdout: "pipe",
-      stderr: "pipe",
       env: {
         ...process.env,
         CI: "true",
