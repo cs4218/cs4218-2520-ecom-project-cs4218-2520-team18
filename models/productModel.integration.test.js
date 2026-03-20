@@ -1,3 +1,5 @@
+// Billy Ho Cheng En, A0252588R
+
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import productModel from "./productModel.js";

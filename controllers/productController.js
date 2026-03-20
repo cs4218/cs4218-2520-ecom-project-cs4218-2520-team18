@@ -1,3 +1,5 @@
+// Billy Ho Cheng En, A0252588R
+
 import productModel from '../models/productModel.js';
 import categoryModel from '../models/categoryModel.js';
 import orderModel from '../models/orderModel.js';
@@ -6,7 +8,6 @@ import fs from "fs";
 import slugify from "slugify";
 import braintree from "braintree";
 import dotenv from "dotenv";
-import { sl } from "date-fns/locale";
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ export const createProductController = async (req, res) => {
       req.fields;
     const { photo } = req.files;
     //validation
-    
+
     switch (true) {
       case !name || !slugify(name, { lower: true }):
         return res.status(400).send({ error: "Name is Required" });
