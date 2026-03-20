@@ -6,6 +6,7 @@ import {
   getAllOrdersController,
   orderStatusController,
 } from "../controllers/orderController.js";
+import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
