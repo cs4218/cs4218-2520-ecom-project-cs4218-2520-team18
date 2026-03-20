@@ -349,7 +349,9 @@ describe("productController - Integration Tests", () => {
             const dbError = new Error("Database unavailable");
             const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => { });
 
-            jest.spyOn(productModel, "findByIdAndDelete").mockRejectedValue(dbError);
+            jest.spyOn(productModel, "findByIdAndDelete").mockReturnValue({
+                select: jest.fn().mockRejectedValue(dbError),
+            });
 
             await deleteProductController(req, res);
 
@@ -415,7 +417,7 @@ describe("productController - Integration Tests", () => {
 
             expect(res.status).toHaveBeenCalledWith(200);
             const payload = res.send.mock.calls[0][0];
-            expect(payload.products[0].photo).toBeUndefined();
+            expect(payload.products[0].toObject()).not.toHaveProperty("photo");
         });
 
         test("returns correct countTotal", async () => {
@@ -516,7 +518,7 @@ describe("productController - Integration Tests", () => {
 
             expect(res.status).toHaveBeenCalledWith(200);
             const payload = res.send.mock.calls[0][0];
-            expect(payload.product.photo).toBeUndefined();
+            expect(payload.product.toObject()).not.toHaveProperty("photo");
         });
     });
 
@@ -537,7 +539,8 @@ describe("productController - Integration Tests", () => {
 
             expect(res.set).toHaveBeenCalledWith("Content-type", "image/jpeg");
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.send).toHaveBeenCalledWith(photoData);
+            const sentData = res.send.mock.calls[0][0];
+            expect(Buffer.compare(sentData, photoData)).toBe(0);
         });
 
         test("returns 404 when product not found", async () => {
@@ -757,7 +760,7 @@ describe("productController - Integration Tests", () => {
 
             expect(res.status).toHaveBeenCalledWith(200);
             const payload = res.send.mock.calls[0][0];
-            expect(payload.products[0].photo).toBeUndefined();
+            expect(payload.products[0].toObject()).not.toHaveProperty("photo");
         });
     });
 
@@ -817,7 +820,7 @@ describe("productController - Integration Tests", () => {
             await searchProductController(req, res);
 
             const results = res.json.mock.calls[0][0];
-            expect(results[0].photo).toBeUndefined();
+            expect(results[0].toObject()).not.toHaveProperty("photo");
         });
     });
 

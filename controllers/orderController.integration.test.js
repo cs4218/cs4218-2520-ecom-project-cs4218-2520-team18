@@ -66,7 +66,7 @@ describe("orderController - Integration Tests", () => {
             products: testProducts.map((p) => p._id),
             payment: { method: "credit_card", transactionId: `txn-${orderCounter}` },
             buyer: testUser._id,
-            status: "Not Process",
+            status: "Not Processed",
             ...overrides,
         });
     };
@@ -140,8 +140,8 @@ describe("orderController - Integration Tests", () => {
             const orders = res.json.mock.calls[0][0];
             expect(orders[0].products).toHaveLength(2);
             expect(orders[0].products[0].name).toBeDefined();
-            // Photo should be excluded
-            expect(orders[0].products[0].photo).toBeUndefined();
+            // Photo should be excluded - check that property doesn't exist on the document
+            expect(orders[0].products[0].toObject()).not.toHaveProperty("photo");
         });
 
         test("populates buyer name", async () => {
@@ -262,7 +262,7 @@ describe("orderController - Integration Tests", () => {
 
     describe("orderStatusController", () => {
         test("updates order status and returns updated order", async () => {
-            const order = await seedOrder({ status: "Not Process" });
+            const order = await seedOrder({ status: "Not Processed" });
 
             const req = {
                 params: { orderId: order._id.toString() },
@@ -281,11 +281,11 @@ describe("orderController - Integration Tests", () => {
         });
 
         test.each([
-            ["Not Process"],
+            ["Not Processed"],
             ["Processing"],
             ["Shipped"],
             ["Delivered"],
-            ["Cancel"],
+            ["Cancelled"],
         ])("accepts valid status value: %s", async (status) => {
             const order = await seedOrder();
 

@@ -26,7 +26,7 @@ export const getAllOrdersController = async (req, res) => {
       .find({})
       .populate("products", "-photo")
       .populate("buyer", "name")
-      .sort({ createdAt: "-1" });
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     console.log(error);
@@ -43,11 +43,29 @@ export const orderStatusController = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
+
+    // Validate status value
+    const validStatuses = ["Not Processed", "Processing", "Shipped", "Delivered", "Cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
     const orders = await orderModel.findByIdAndUpdate(
       orderId,
       { status },
       { new: true }
     );
+
+    if (!orders) {
+      return res.status(404).send({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
     res.json(orders);
   } catch (error) {
     console.log(error);
