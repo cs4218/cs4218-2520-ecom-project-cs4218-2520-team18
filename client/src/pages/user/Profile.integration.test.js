@@ -14,8 +14,6 @@ import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
 
-jest.mock("../../components/UserMenu", () => () => <div data-testid="usermenu-mock">UserMenu</div>);
-
 describe("Profile Component - Integration Tests", () => {
 	let setItemSpy;
 	let toastSuccessSpy;
@@ -74,7 +72,7 @@ describe("Profile Component - Integration Tests", () => {
 
 			expect(screen.getByPlaceholderText("Enter Your Email")).toBeDisabled();
 			expect(screen.getByText("USER PROFILE")).toBeInTheDocument();
-			expect(screen.getByTestId("usermenu-mock")).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/dashboard/user/orders");
 		});
 	});
 
