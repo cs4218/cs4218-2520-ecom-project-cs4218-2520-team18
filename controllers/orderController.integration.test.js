@@ -363,5 +363,261 @@ describe("orderController - Integration Tests", () => {
 
             consoleSpy.mockRestore();
         });
+
+        // Aw Jean Leng Adrian, A0277537N - Additional Integration Tests
+
+        describe("Multiple Status Transitions", () => {
+            test("sequential updates: Processing → Shipped → Delivered", async () => {
+                const order = await seedOrder({ status: "Processing" });
+
+                // First update: Processing → Shipped
+                const req1 = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Shipped" },
+                };
+                const res1 = createResponse();
+                await orderStatusController(req1, res1);
+
+                expect(res1.json.mock.calls[0][0].status).toBe("Shipped");
+
+                // Second update: Shipped → Delivered
+                const req2 = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Delivered" },
+                };
+                const res2 = createResponse();
+                await orderStatusController(req2, res2);
+
+                expect(res2.json.mock.calls[0][0].status).toBe("Delivered");
+
+                // Verify final DB state
+                const dbOrder = await orderModel.findById(order._id);
+                expect(dbOrder.status).toBe("Delivered");
+            });
+
+            test("status is overwritten, not appended (no history)", async () => {
+                const order = await seedOrder({ status: "Not Processed" });
+
+                // Update to Processing
+                await orderStatusController(
+                    { params: { orderId: order._id.toString() }, body: { status: "Processing" } },
+                    createResponse()
+                );
+
+                // Update to Shipped
+                await orderStatusController(
+                    { params: { orderId: order._id.toString() }, body: { status: "Shipped" } },
+                    createResponse()
+                );
+
+                const dbOrder = await orderModel.findById(order._id);
+                // Status should be latest value only
+                expect(dbOrder.status).toBe("Shipped");
+                // No status history array should exist
+                expect(dbOrder.statusHistory).toBeUndefined();
+            });
+        });
+
+        describe("Enum Validation", () => {
+            test("rejects lowercase 'processing' (case-sensitive)", async () => {
+                const order = await seedOrder();
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "processing" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                expect(res.status).toHaveBeenCalledWith(400);
+            });
+
+            test("rejects empty string status", async () => {
+                const order = await seedOrder();
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                expect(res.status).toHaveBeenCalledWith(400);
+            });
+
+            test("rejects status with extra whitespace", async () => {
+                const order = await seedOrder();
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: " Shipped " },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                expect(res.status).toHaveBeenCalledWith(400);
+            });
+        });
+
+        describe("Order Preservation", () => {
+            test("updating status preserves products array", async () => {
+                const order = await seedOrder({ status: "Processing" });
+                const originalProducts = order.products.map(p => p.toString());
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Shipped" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                const dbOrder = await orderModel.findById(order._id);
+                const updatedProducts = dbOrder.products.map(p => p.toString());
+                expect(updatedProducts).toEqual(originalProducts);
+            });
+
+            test("updating status preserves buyer field", async () => {
+                const order = await seedOrder({ status: "Processing" });
+                const originalBuyer = order.buyer.toString();
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Shipped" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                const dbOrder = await orderModel.findById(order._id);
+                expect(dbOrder.buyer.toString()).toBe(originalBuyer);
+            });
+
+            test("updating status preserves payment info", async () => {
+                const order = await seedOrder({
+                    status: "Processing",
+                    payment: { method: "credit_card", transactionId: "txn-preserve-test", amount: 199.99 },
+                });
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Delivered" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                const dbOrder = await orderModel.findById(order._id);
+                expect(dbOrder.payment.method).toBe("credit_card");
+                expect(dbOrder.payment.transactionId).toBe("txn-preserve-test");
+                expect(dbOrder.payment.amount).toBe(199.99);
+            });
+
+            test("only status field is modified, all other fields unchanged", async () => {
+                const order = await seedOrder({ status: "Not Processed" });
+                const originalOrder = await orderModel.findById(order._id).lean();
+
+                const req = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Cancelled" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                const updatedOrder = await orderModel.findById(order._id).lean();
+
+                // Status should be updated
+                expect(updatedOrder.status).toBe("Cancelled");
+                expect(updatedOrder.status).not.toBe(originalOrder.status);
+
+                // All other fields should remain identical
+                expect(updatedOrder.products.map(p => p.toString())).toEqual(
+                    originalOrder.products.map(p => p.toString())
+                );
+                expect(updatedOrder.buyer.toString()).toBe(originalOrder.buyer.toString());
+                expect(updatedOrder.payment).toEqual(originalOrder.payment);
+                expect(updatedOrder._id.toString()).toBe(originalOrder._id.toString());
+            });
+        });
+
+        describe("Non-Existent Order Handling", () => {
+            test("invalid ObjectId format returns 500 error", async () => {
+                const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+                const req = {
+                    params: { orderId: "invalid-id-format" },
+                    body: { status: "Processing" },
+                };
+                const res = createResponse();
+
+                await orderStatusController(req, res);
+
+                // Invalid ObjectId causes Mongoose cast error (500)
+                expect(res.status).toHaveBeenCalledWith(500);
+
+                consoleSpy.mockRestore();
+            });
+        });
+
+        describe("Concurrent Update Handling", () => {
+            test("simultaneous updates - last write wins", async () => {
+                const order = await seedOrder({ status: "Processing" });
+
+                // Simulate concurrent updates
+                const req1 = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Shipped" },
+                };
+                const res1 = createResponse();
+
+                const req2 = {
+                    params: { orderId: order._id.toString() },
+                    body: { status: "Delivered" },
+                };
+                const res2 = createResponse();
+
+                // Execute concurrently
+                await Promise.all([
+                    orderStatusController(req1, res1),
+                    orderStatusController(req2, res2),
+                ]);
+
+                // DB should have one of the values (last-write-wins)
+                const dbOrder = await orderModel.findById(order._id);
+                expect(["Shipped", "Delivered"]).toContain(dbOrder.status);
+            });
+
+            test("no data corruption from concurrent updates", async () => {
+                const order = await seedOrder({
+                    status: "Processing",
+                    payment: { method: "credit_card", transactionId: "txn-concurrent" },
+                });
+                const originalProducts = order.products.map(p => p.toString());
+
+                // Multiple concurrent status updates
+                const statuses = ["Shipped", "Delivered", "Cancelled"];
+                const promises = statuses.map(status => {
+                    const req = {
+                        params: { orderId: order._id.toString() },
+                        body: { status },
+                    };
+                    const res = createResponse();
+                    return orderStatusController(req, res);
+                });
+
+                await Promise.all(promises);
+
+                // Verify no data corruption
+                const dbOrder = await orderModel.findById(order._id);
+                expect(["Shipped", "Delivered", "Cancelled"]).toContain(dbOrder.status);
+                expect(dbOrder.products.map(p => p.toString())).toEqual(originalProducts);
+                expect(dbOrder.payment.transactionId).toBe("txn-concurrent");
+                expect(dbOrder.buyer.toString()).toBe(testUser._id.toString());
+            });
+        });
     });
 });
