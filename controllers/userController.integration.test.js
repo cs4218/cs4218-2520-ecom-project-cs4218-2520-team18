@@ -7,7 +7,6 @@ import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
 import { loginController } from "./loginController.js";
-
 import { updateProfileController, getAllUsersController } from "./userController.js";
 import { registerController } from "./registerController.js";
 
