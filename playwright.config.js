@@ -37,6 +37,7 @@ export default defineConfig({
         JWT_SECRET: process.env.JWT_SECRET || "playwright_jwt_secret",
         USE_IN_MEMORY_MONGO: "true",
         E2E_SEED_ADMIN: "true",
+        E2E_SEED_TEST_DATA: "true",
       },
     },
     {
