@@ -1,8 +1,5 @@
 // Aw Jean Leng Adrian, A0277537N
 
-// Integration tests for Search functionality
-// Tests the interaction between SearchInput, SearchProvider, Search page, and API
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
