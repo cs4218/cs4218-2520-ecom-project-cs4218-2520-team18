@@ -27,7 +27,7 @@ export default defineConfig({
   webServer: [
     {
       command: "node server.js",
-      url: "http://127.0.0.1:6060",
+      url: "http://127.0.0.1:6060/",
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
