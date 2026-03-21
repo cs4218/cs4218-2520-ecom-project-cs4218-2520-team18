@@ -120,8 +120,11 @@ test('handles payment and navigates to orders', async () => {
   fireEvent.click(payBtn);
 
   await waitFor(() => {
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard/user/orders');
+    expect(mockNavigate).toHaveBeenCalled();
   });
+  // eslint-disable-next-line no-console
+  console.log('mockNavigate calls:', mockNavigate.mock.calls);
+  expect(mockNavigate).toHaveBeenCalledWith('/dashboard/user/orders');
 });
 
 test('shows login prompt for guest', () => {

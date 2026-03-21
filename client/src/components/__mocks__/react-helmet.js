@@ -8,18 +8,13 @@ export function Helmet({ children }) {
           document.title = child.props.children;
         }
         if (child.type === 'meta') {
-          const meta = document.createElement('meta');
-          Object.entries(child.props).forEach(([key, value]) => {
-            if (key !== 'children' && key !== 'data-testid') {
-              meta.setAttribute(key, value);
-            }
+          return React.cloneElement(child, {
+            ...child.props,
+            'data-testid': 'helmet-meta',
           });
-          meta.setAttribute('data-testid', 'helmet-meta');
-          document.head.appendChild(meta);
         }
       }
     });
-    // Cleanup: remove added meta tags after unmount
     return () => {
       const metas = document.head.querySelectorAll(
         'meta[data-testid="helmet-meta"]',
