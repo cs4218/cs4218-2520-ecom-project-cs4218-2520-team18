@@ -14,20 +14,16 @@ import toast from "react-hot-toast";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import Login from "./Login";
 import { AuthProvider, useAuth } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
-	success: jest.fn(),
-	error: jest.fn(),
-}));
-
-jest.mock("../../components/Layout", () => ({ children }) => (
-	<div data-testid="layout-mock">{children}</div>
-));
 
 describe("Login - Integration Tests", () => {
 	let getItemSpy;
 	let setItemSpy;
+	let toastSuccessSpy;
+	let toastErrorSpy;
 
 	const AuthStateProbe = () => {
 		const [auth] = useAuth();
@@ -56,15 +52,20 @@ describe("Login - Integration Tests", () => {
 	const renderLogin = (initialEntries = ["/login"]) =>
 		render(
 			<AuthProvider>
-				<MemoryRouter initialEntries={initialEntries}>
-					<AuthStateProbe />
-					<LocationProbe />
-					<Routes>
-						<Route path="/login" element={<Login />} />
-						<Route path="/" element={<div>HOME_PAGE</div>} />
-						<Route path="/dashboard" element={<div>DASHBOARD_PAGE</div>} />
-					</Routes>
-				</MemoryRouter>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={initialEntries}>
+							<AuthStateProbe />
+							<LocationProbe />
+							<Routes>
+								<Route path="/login" element={<Login />} />
+								<Route path="/" element={<div>HOME_PAGE</div>} />
+								<Route path="/dashboard" element={<div>DASHBOARD_PAGE</div>} />
+								<Route path="/forgot-password" element={<div>FORGOT_PASSWORD_PAGE</div>} />
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
 			</AuthProvider>,
 		);
 
@@ -73,8 +74,13 @@ describe("Login - Integration Tests", () => {
 		jest.clearAllMocks();
 		localStorage.clear();
 		axios.defaults.headers.common.Authorization = "";
+		axios.post.mockReset();
+		axios.get.mockReset();
 		getItemSpy = jest.spyOn(Storage.prototype, "getItem");
 		setItemSpy = jest.spyOn(Storage.prototype, "setItem");
+		toastSuccessSpy = jest.spyOn(toast, "success").mockImplementation(() => {});
+		toastErrorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+		axios.get.mockResolvedValue({ data: { category: [] } });
 	});
 
 	describe("The Happy Path (End-to-End Login)", () => {
@@ -152,7 +158,7 @@ describe("Login - Integration Tests", () => {
 					token: "mockToken",
 				}),
 			);
-			expect(toast.success).toHaveBeenCalledWith(
+			expect(toastSuccessSpy).toHaveBeenCalledWith(
 				"Login successful",
 				expect.objectContaining({
 					duration: expect.any(Number),
@@ -199,7 +205,7 @@ describe("Login - Integration Tests", () => {
 			typeCredentials();
 			fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
-			await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Invalid credentials"));
+			await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith("Invalid credentials"));
 			expect(setItemSpy).not.toHaveBeenCalled();
 			expect(screen.getByTestId("auth-user")).toHaveTextContent("NO_USER");
 			expect(screen.getByTestId("auth-token")).toHaveTextContent("NO_TOKEN");
@@ -221,7 +227,7 @@ describe("Login - Integration Tests", () => {
 			typeCredentials();
 			fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
-			await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Invalid Email or Password"));
+			await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith("Invalid Email or Password"));
 			expect(consoleSpy).toHaveBeenCalledWith(apiError);
 			consoleSpy.mockRestore();
 		});
@@ -235,7 +241,7 @@ describe("Login - Integration Tests", () => {
 			typeCredentials();
 			fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
-			await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Something went wrong"));
+			await waitFor(() => expect(toastErrorSpy).toHaveBeenCalledWith("Something went wrong"));
 			expect(consoleSpy).toHaveBeenCalledWith(unknownError);
 			consoleSpy.mockRestore();
 		});
@@ -262,9 +268,10 @@ describe("Login - Integration Tests", () => {
 				},
 			});
 
-			const { container } = renderLogin();
+			renderLogin();
 			typeCredentials();
-			const form = container.querySelector("form");
+			const form = screen.getByPlaceholderText("Enter Your Password").closest("form");
+			expect(form).toBeTruthy();
 			const submitEvent = createEvent.submit(form);
 			submitEvent.preventDefault = jest.fn();
 

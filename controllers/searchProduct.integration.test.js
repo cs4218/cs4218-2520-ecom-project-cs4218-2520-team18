@@ -36,6 +36,8 @@ describe('Search Product Backend Integration Tests - Real API + MongoDB', () => 
     };
 
     beforeAll(async () => {
+        process.env.MONGOMS_DOWNLOAD_DIR = './node_modules/.cache/mongodb-memory-server/mongodb-binaries';
+        process.env.MONGOMS_PREFER_GLOBAL_PATH = 'false';
         mongoServer = await MongoMemoryServer.create();
         await mongoose.connect(mongoServer.getUri(), {
             dbName: 'search-backend-integration-tests',

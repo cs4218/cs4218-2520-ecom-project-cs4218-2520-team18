@@ -105,7 +105,8 @@ const assertLoggedOutNavbarState = async (page, user) => {
 };
 
 test.describe("Logout and session-clearing E2E flows", () => {
-  test("logout clears auth/session state and removes auth header behavior", async ({ page }) => {
+  test.describe("Atomic linear workflows", () => {
+    test("logout clears auth/session state and removes auth header behavior", async ({ page }) => {
     const user = buildUniqueUser("logout-clears-state");
     await loginAndOpenUserDashboard(page, user);
 
@@ -132,9 +133,9 @@ test.describe("Logout and session-clearing E2E flows", () => {
     expect(authorizationAfterLogout).toBeNull();
 
     await assertLoggedOutNavbarState(page, user);
-  });
+    });
 
-  test("redirect after logout keeps dashboard content hidden and restores public navbar", async ({ page }) => {
+    test("redirect after logout keeps dashboard content hidden and restores public navbar", async ({ page }) => {
     const user = buildUniqueUser("logout-redirect");
     await loginAndOpenUserDashboard(page, user);
 
@@ -144,9 +145,9 @@ test.describe("Logout and session-clearing E2E flows", () => {
     await expect(page.locator("h3", { hasText: user.name })).toHaveCount(0);
     await expect(page.locator("h3", { hasText: user.email })).toHaveCount(0);
     await assertLoggedOutNavbarState(page, user);
-  });
+    });
 
-  test("after logout, protected routes remain blocked for /dashboard/user and /dashboard/admin", async ({ page }) => {
+    test("after logout, protected routes remain blocked for /dashboard/user and /dashboard/admin", async ({ page }) => {
     const user = buildUniqueUser("logout-blocked-routes");
     await loginAndOpenUserDashboard(page, user);
 
@@ -197,9 +198,12 @@ test.describe("Logout and session-clearing E2E flows", () => {
 
     await expect(page).toHaveURL(/\/login$/, { timeout: 12000 });
     await expect(page.getByText(/Admin Name\s*:/i)).toHaveCount(0);
+    });
   });
 
-  test("re-login after logout restores localStorage auth and dashboard access", async ({ page }) => {
+  test.describe("Cross workflows", () => {
+
+    test("re-login after logout restores localStorage auth and dashboard access", async ({ page }) => {
     const user = buildUniqueUser("logout-relogin");
     await loginAndOpenUserDashboard(page, user);
 
@@ -227,5 +231,6 @@ test.describe("Logout and session-clearing E2E flows", () => {
 
     await expect(page.locator("h3", { hasText: user.name })).toBeVisible();
     await expect(page.locator("h3", { hasText: user.email })).toBeVisible();
+    });
   });
 });

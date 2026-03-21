@@ -2,30 +2,32 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import Spinner from './Spinner';
-import { MemoryRouter, useNavigate, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-jest.useFakeTimers();
-
-const mockNavigate = jest.fn();
-const mockLocation = { pathname: '/current' };
-
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-  useLocation: () => mockLocation,
-}));
+const renderSpinnerRoutes = (path) => {
+  render(
+    <MemoryRouter initialEntries={['/current']}>
+      <Routes>
+        <Route path="/current" element={<Spinner {...(path ? { path } : {})} />} />
+        <Route path="/login" element={<h2>Login Page</h2>} />
+        <Route path="/dashboard" element={<h2>Dashboard Page</h2>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+};
 
 describe('Spinner component', () => {
   beforeEach(() => {
-    mockNavigate.mockClear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   test('renders countdown correctly', () => {
-    render(
-      <MemoryRouter>
-        <Spinner path="login" />
-      </MemoryRouter>,
-    );
+    renderSpinnerRoutes('login');
 
     expect(
       screen.getByText((content) =>
@@ -49,46 +51,28 @@ describe('Spinner component', () => {
   });
 
   test('uses default path "login" when path prop is not provided', () => {
-    render(
-      <MemoryRouter>
-        <Spinner />
-      </MemoryRouter>,
-    );
+    renderSpinnerRoutes();
 
     act(() => {
       jest.advanceTimersByTime(3000);
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith('/login', {
-      state: '/current',
-    });
+    expect(screen.getByRole('heading', { name: 'Login Page' })).toBeInTheDocument();
   });
 
   test('navigates when countdown reaches 0', () => {
-    render(
-      <MemoryRouter>
-        <Spinner path="login" />
-      </MemoryRouter>,
-    );
+    renderSpinnerRoutes('login');
 
     act(() => jest.advanceTimersByTime(3000));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/login', {
-      state: '/current',
-    });
+    expect(screen.getByRole('heading', { name: 'Login Page' })).toBeInTheDocument();
   });
 
   test('supports custom path prop', () => {
-    render(
-      <MemoryRouter>
-        <Spinner path="dashboard" />
-      </MemoryRouter>,
-    );
+    renderSpinnerRoutes('dashboard');
 
     act(() => jest.advanceTimersByTime(3000));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard', {
-      state: '/current',
-    });
+    expect(screen.getByRole('heading', { name: 'Dashboard Page' })).toBeInTheDocument();
   });
 });

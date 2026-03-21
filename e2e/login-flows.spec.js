@@ -41,7 +41,8 @@ const openUserDashboardFromHeader = async (page, userName) => {
 };
 
 test.describe("Login E2E flows", () => {
-  test("valid login flow", async ({ page }) => {
+  test.describe("Atomic linear workflows", () => {
+    test("valid login flow", async ({ page }) => {
     const user = buildUser("valid-login");
 
     await registerUserViaUi(page, user);
@@ -68,9 +69,9 @@ test.describe("Login E2E flows", () => {
     await expect(page.getByText(user.name)).toBeVisible();
     await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Register" })).toHaveCount(0);
-  });
+    });
 
-  test("invalid login flow: existing email + wrong password shows error and does not persist auth", async ({ page }) => {
+    test("invalid login flow: existing email + wrong password shows error and does not persist auth", async ({ page }) => {
     const user = buildUser("wrong-password");
 
     await registerUserViaUi(page, user);
@@ -86,9 +87,9 @@ test.describe("Login E2E flows", () => {
 
     const afterAuth = await page.evaluate(() => globalThis.localStorage.getItem("auth"));
     expect(afterAuth).toBeNull();
-  });
+    });
 
-  test("invalid login flow: non-existent email shows error and does not persist auth", async ({ page }) => {
+    test("invalid login flow: non-existent email shows error and does not persist auth", async ({ page }) => {
     const user = buildUser("non-existent");
 
     await page.goto("/login");
@@ -103,9 +104,9 @@ test.describe("Login E2E flows", () => {
 
     const afterAuth = await page.evaluate(() => globalThis.localStorage.getItem("auth"));
     expect(afterAuth).toBeNull();
-  });
+    });
 
-  test("malformed email: blocks API call", async ({ page }) => {
+    test("malformed email: blocks API call", async ({ page }) => {
     let requestSent = false;
     page.on("request", (request) => {
       if (request.url().includes("/api/v1/auth/login")) {
@@ -121,9 +122,9 @@ test.describe("Login E2E flows", () => {
 
     expect(isInvalid).toBe(true);
     expect(requestSent).toBe(false);
-  });
+    });
 
-  test("empty fields submission: both empty blocks submit and no login API call", async ({ page }) => {
+    test("empty fields submission: both empty blocks submit and no login API call", async ({ page }) => {
     let requestSent = false;
     page.on("request", (request) => {
       if (request.url().includes("/api/v1/auth/login")) {
@@ -148,9 +149,9 @@ test.describe("Login E2E flows", () => {
 
     expect(validity.emailMissing).toBe(true);
     expect(validity.passwordMissing).toBe(true);
-  });
+    });
 
-  test("empty password submission: email filled but password empty blocks submit and no login API call", async ({ page }) => {
+    test("empty password submission: email filled but password empty blocks submit and no login API call", async ({ page }) => {
     let requestSent = false;
     page.on("request", (request) => {
       if (request.url().includes("/api/v1/auth/login")) {
@@ -170,9 +171,9 @@ test.describe("Login E2E flows", () => {
       return input.validity.valueMissing;
     });
     expect(passwordMissing).toBe(true);
-  });
+    });
 
-  test("empty email submission: password filled but email empty blocks submit and no login API call", async ({ page }) => {
+    test("empty email submission: password filled but email empty blocks submit and no login API call", async ({ page }) => {
     let requestSent = false;
     page.on("request", (request) => {
       if (request.url().includes("/api/v1/auth/login")) {
@@ -192,10 +193,13 @@ test.describe("Login E2E flows", () => {
       return input.validity.valueMissing;
     });
     expect(emailMissing).toBe(true);
+    });
   });
 
+  test.describe("Cross workflows", () => {
+
   // Loh Ze Qing Norbert, A0277473R
-  test("login session survives refresh and is revoked after logout for protected routes", async ({ page }) => {
+    test("login session survives refresh and is revoked after logout for protected routes", async ({ page }) => {
     const user = buildUser("refresh-guard");
 
     await registerUserViaUi(page, user);
@@ -225,5 +229,6 @@ test.describe("Login E2E flows", () => {
     await page.goto("/dashboard/user");
     await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
     await expect(page).toHaveURL(/\/$|\/login$/, { timeout: 12000 });
+    });
   });
 });

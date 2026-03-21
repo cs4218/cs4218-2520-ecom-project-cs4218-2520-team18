@@ -6,6 +6,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
+import { loginController } from "./loginController.js";
 import { updateProfileController, getAllUsersController } from "./userController.js";
 import { registerController } from "./registerController.js";
 
@@ -253,6 +254,83 @@ describe("updateProfileController - Integration Tests", () => {
 					DOB: "1999-09-09",
 				},
 				{ new: true },
+			);
+		});
+
+		test("profile update to password enforces new login and rejects old login", async () => {
+			process.env.JWT_SECRET = "integration_jwt_secret";
+			userCounter += 1;
+			const email = `profile.login.flow.${userCounter}@example.com`;
+			const originalPassword = "OriginalPass123";
+			const newPassword = "UpdatedPass456";
+
+			const registerReq = {
+				body: {
+					name: "Profile Login Flow User",
+					email,
+					password: originalPassword,
+					phone: "+14155552671",
+					address: "123 Profile Flow Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				},
+			};
+			const registerRes = createResponse();
+
+			await registerController(registerReq, registerRes);
+
+			expect(registerRes.status).toHaveBeenCalledWith(201);
+
+			const registeredUser = await userModel.findOne({ email });
+			expect(registeredUser).not.toBeNull();
+
+			const updateReq = {
+				user: { _id: registeredUser._id },
+				body: {
+					password: newPassword,
+					address: "456 Updated Profile Flow Street",
+				},
+			};
+			const updateRes = createResponse();
+
+			await updateProfileController(updateReq, updateRes);
+
+			expect(updateRes.status).toHaveBeenCalledWith(200);
+
+			const oldLoginReq = {
+				body: {
+					email,
+					password: originalPassword,
+				},
+			};
+			const oldLoginRes = createResponse();
+
+			await loginController(oldLoginReq, oldLoginRes);
+
+			expect(oldLoginRes.status).toHaveBeenCalledWith(400);
+			expect(oldLoginRes.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid Email or Password",
+			});
+
+			const newLoginReq = {
+				body: {
+					email,
+					password: newPassword,
+				},
+			};
+			const newLoginRes = createResponse();
+
+			await loginController(newLoginReq, newLoginRes);
+
+			expect(newLoginRes.status).toHaveBeenCalledWith(200);
+			expect(newLoginRes.send).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Login Successful",
+					token: expect.any(String),
+					user: expect.objectContaining({ email }),
+				}),
 			);
 		});
 	});

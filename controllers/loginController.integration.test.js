@@ -161,6 +161,67 @@ describe("loginController - Integration Tests", () => {
 		});
 	});
 
+	describe("Cross Workflow Integration (Login ↔ Register)", () => {
+		test("rejects login before registration, then allows login after successful register", async () => {
+			userCounter += 1;
+			const email = `login.register.flow.${userCounter}@example.com`;
+			const password = "FlowPassword123";
+
+			const preRegisterLoginReq = {
+				body: {
+					email,
+					password,
+				},
+			};
+			const preRegisterLoginRes = createResponse();
+
+			await loginController(preRegisterLoginReq, preRegisterLoginRes);
+
+			expect(preRegisterLoginRes.status).toHaveBeenCalledWith(400);
+			expect(preRegisterLoginRes.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid Email or Password",
+			});
+
+			const registerReq = {
+				body: {
+					name: "Login Register Flow User",
+					email,
+					password,
+					phone: "+14155552671",
+					address: "123 Cross Flow Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				},
+			};
+			const registerRes = createResponse();
+
+			await registerController(registerReq, registerRes);
+
+			expect(registerRes.status).toHaveBeenCalledWith(201);
+
+			const postRegisterLoginReq = {
+				body: {
+					email: `  ${email.toUpperCase()}  `,
+					password,
+				},
+			};
+			const postRegisterLoginRes = createResponse();
+
+			await loginController(postRegisterLoginReq, postRegisterLoginRes);
+
+			expect(postRegisterLoginRes.status).toHaveBeenCalledWith(200);
+			expect(postRegisterLoginRes.send).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Login Successful",
+					token: expect.any(String),
+					user: expect.objectContaining({ email }),
+				}),
+			);
+		});
+	});
+
 	describe("Authentication Failures (Negative Integration)", () => {
 		test("returns 400 when password is incorrect", async () => {
 			const { user } = await seedUser({ password: "CorrectPassword123" });

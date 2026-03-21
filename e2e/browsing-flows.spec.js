@@ -104,8 +104,8 @@ test.describe("Browsing E2E flows", () => {
       const aspectRatioDifference = Math.abs(naturalAspectRatio - displayAspectRatio) / naturalAspectRatio;
       expect(aspectRatioDifference).toBeLessThan(0.05);
 
-      // Assert: Add to cart button should be present
-      await expect(page.getByRole("button", { name: "ADD TO CART" })).toBeVisible();
+      // Assert: Add to cart button should be present (main product, not similar products)
+      await expect(page.locator('.product-details-info button:has-text("ADD TO CART")')).toBeVisible();
 
       // Assert: Similar products section should be present
       await expect(page.getByRole('heading', { name: /Similar Products/ })).toBeVisible();
@@ -228,8 +228,8 @@ test.describe("Browsing E2E flows", () => {
       const aspectRatioDifference = Math.abs(naturalAspectRatio - displayAspectRatio) / naturalAspectRatio;
       expect(aspectRatioDifference).toBeLessThan(0.05);
 
-      // Assert: Add to cart button should be present
-      await expect(page.getByRole("button", { name: "ADD TO CART" })).toBeVisible();
+      // Assert: Add to cart button should be present (main product, not similar products)
+      await expect(page.locator('.product-details-info button:has-text("ADD TO CART")')).toBeVisible();
 
       // Assert: Similar products section should be present
       await expect(page.getByRole('heading', { name: /Similar Products/ })).toBeVisible();

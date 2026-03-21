@@ -109,148 +109,152 @@ const visitAdminDashboardAndGetAdminAuthStatus = async (page) => {
 };
 
 test.describe("Protected route E2E flows", () => {
-	test("denied access while logged out: /dashboard/user redirects to /login and never renders protected content", async ({ page }) => {
-		let userAuthRequestCount = 0;
-		page.on("request", (request) => {
-			if (request.url().includes("/api/v1/auth/user-auth")) {
-				userAuthRequestCount += 1;
-			}
+	test.describe("Atomic linear workflows", () => {
+		test("denied access while logged out: /dashboard/user redirects to /login and never renders protected content", async ({ page }) => {
+			let userAuthRequestCount = 0;
+			page.on("request", (request) => {
+				if (request.url().includes("/api/v1/auth/user-auth")) {
+					userAuthRequestCount += 1;
+				}
+			});
+
+			await page.goto("/login");
+			await page.evaluate(() => localStorage.removeItem("auth"));
+
+			await page.goto("/dashboard/user");
+
+			await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
+			await expect(page).toHaveURL(/\/$/, { timeout: 12000 });
+
+			expect(userAuthRequestCount).toBe(0);
+			await expect(page.locator("h3", { hasText: /@example\.com/i })).toHaveCount(0);
 		});
 
-		await page.goto("/login");
-		await page.evaluate(() => localStorage.removeItem("auth"));
+		test("denied access while logged out: /dashboard/admin redirects to /login and admin dashboard never renders", async ({ page }) => {
+			let adminAuthRequestCount = 0;
+			page.on("request", (request) => {
+				if (request.url().includes("/api/v1/auth/admin-auth")) {
+					adminAuthRequestCount += 1;
+				}
+			});
 
-		await page.goto("/dashboard/user");
+			await page.goto("/login");
+			await page.evaluate(() => localStorage.removeItem("auth"));
 
-		await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
-		await expect(page).toHaveURL(/\/$/, { timeout: 12000 });
+			await page.goto("/dashboard/admin");
 
-		expect(userAuthRequestCount).toBe(0);
-		await expect(page.locator("h3", { hasText: /@example\.com/i })).toHaveCount(0);
-	});
+			await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
+			await expect(page).toHaveURL(/\/login$/, { timeout: 12000 });
 
-	test("denied access while logged out: /dashboard/admin redirects to /login and admin dashboard never renders", async ({ page }) => {
-		let adminAuthRequestCount = 0;
-		page.on("request", (request) => {
-			if (request.url().includes("/api/v1/auth/admin-auth")) {
-				adminAuthRequestCount += 1;
-			}
+			expect(adminAuthRequestCount).toBe(0);
+			await expect(page.getByText(/Admin Name\s*:/i)).toHaveCount(0);
 		});
 
-		await page.goto("/login");
-		await page.evaluate(() => localStorage.removeItem("auth"));
+		test("admin user granted for /dashboard/admin: login -> admin-auth 200 -> dashboard renders", async ({ page }) => {
+			await page.goto("/login");
 
-		await page.goto("/dashboard/admin");
+			const loginResponsePromise = page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/v1/auth/login") &&
+					response.request().method() === "POST" &&
+					response.status() === 200,
+			);
 
-		await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
-		await expect(page).toHaveURL(/\/login$/, { timeout: 12000 });
+			await loginViaUi(page, SEEDED_ADMIN_EMAIL, SEEDED_ADMIN_PASSWORD);
+			await loginResponsePromise;
+			await expect(page).toHaveURL("/");
 
-		expect(adminAuthRequestCount).toBe(0);
-		await expect(page.getByText(/Admin Name\s*:/i)).toHaveCount(0);
+			const auth = await readAuthFromStorage(page);
+			expect(auth).toBeTruthy();
+			expect(auth.token).toBeTruthy();
+			expect(auth.user?.email).toBe(SEEDED_ADMIN_EMAIL);
+
+			await page.goto("/about");
+
+			const { status, authorizationHeader } = await visitAdminDashboardAndGetAdminAuthStatus(page);
+			expect(status).toBe(200);
+			expect(authorizationHeader).toBe(auth.token);
+
+			await expect(page).toHaveURL(/\/dashboard\/admin$/);
+			await expect(page.getByText(/Admin Name\s*:/i)).toBeVisible();
+			await expect(page.getByText(/Admin Email\s*:/i)).toBeVisible();
+			await expect(page.getByText(SEEDED_ADMIN_EMAIL)).toBeVisible();
+		});
 	});
 
-	test("granted access while logged in: direct visit to /dashboard/user checks user-auth and renders profile details", async ({ page }) => {
-		const user = buildUser("granted-user");
-		await registerAndLoginUser(page, user);
+	test.describe("Cross workflows", () => {
+		test("register -> login -> visit /dashboard/user: user-auth 200 and profile renders", async ({ page }) => {
+			const user = buildUser("granted-user");
+			await registerAndLoginUser(page, user);
 
-		const auth = await readAuthFromStorage(page);
-		expect(auth).toBeTruthy();
-		expect(auth.token).toBeTruthy();
-		expect(auth.user?.email).toBe(user.email);
-		await expect(page.getByText(user.name)).toBeVisible();
+			const auth = await readAuthFromStorage(page);
+			expect(auth).toBeTruthy();
+			expect(auth.token).toBeTruthy();
+			expect(auth.user?.email).toBe(user.email);
+			await expect(page.getByText(user.name)).toBeVisible();
 
-		await page.goto("/about");
+			await page.goto("/about");
 
-		const { status, authorizationHeader } = await visitUserDashboardAndGetUserAuthStatus(page);
-		expect(status).toBe(200);
-		expect(authorizationHeader).toBe(auth.token);
+			const { status, authorizationHeader } = await visitUserDashboardAndGetUserAuthStatus(page);
+			expect(status).toBe(200);
+			expect(authorizationHeader).toBe(auth.token);
 
-		await expect(page).toHaveURL(/\/dashboard\/user$/);
-		await expect(page.locator("h3", { hasText: user.name })).toBeVisible();
-		await expect(page.locator("h3", { hasText: user.email })).toBeVisible();
-		await expect(page.locator("h3", { hasText: user.address })).toBeVisible();
-	});
+			await expect(page).toHaveURL(/\/dashboard\/user$/);
+			await expect(page.locator("h3", { hasText: user.name })).toBeVisible();
+			await expect(page.locator("h3", { hasText: user.email })).toBeVisible();
+			await expect(page.locator("h3", { hasText: user.address })).toBeVisible();
+		});
 
-	test("non-admin user denied from /dashboard/admin: admin-auth returns 403 and redirects away", async ({ page }) => {
-		const user = buildUser("non-admin");
-		await registerAndLoginUser(page, user);
+		test("register -> login as non-admin -> visit /dashboard/admin: denied and redirected", async ({ page }) => {
+			const user = buildUser("non-admin");
+			await registerAndLoginUser(page, user);
 
-		const adminAuthResponsePromise = page.waitForResponse(
-			(response) =>
-				response.url().includes("/api/v1/auth/admin-auth") &&
-				response.request().method() === "GET",
-			{ timeout: 12000 },
-		);
+			const adminAuthResponsePromise = page.waitForResponse(
+				(response) =>
+					response.url().includes("/api/v1/auth/admin-auth") &&
+					response.request().method() === "GET",
+				{ timeout: 12000 },
+			);
 
-		await page.goto("/dashboard/admin");
-		const adminAuthResponse = await adminAuthResponsePromise;
+			await page.goto("/dashboard/admin");
+			const adminAuthResponse = await adminAuthResponsePromise;
 
-		expect([401, 403]).toContain(adminAuthResponse.status());
-		await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
-		await expect(page).toHaveURL(/\/login$/, { timeout: 12000 });
-		await expect(page.getByText(/Admin Name\s*:/i)).toHaveCount(0);
-	});
+			expect([401, 403]).toContain(adminAuthResponse.status());
+			await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
+			await expect(page).toHaveURL(/\/login$/, { timeout: 12000 });
+			await expect(page.getByText(/Admin Name\s*:/i)).toHaveCount(0);
+		});
 
-	test("admin user granted for /dashboard/admin: admin-auth returns 200 and admin dashboard renders", async ({ page }) => {
-		await page.goto("/login");
+		test("register -> login -> close tab -> reopen: persisted token still grants /dashboard/user", async ({ browser }) => {
+			const user = buildUser("persist");
 
-		const loginResponsePromise = page.waitForResponse(
-			(response) =>
-				response.url().includes("/api/v1/auth/login") &&
-				response.request().method() === "POST" &&
-				response.status() === 200,
-		);
+			const context = await browser.newContext();
+			const page = await context.newPage();
 
-		await loginViaUi(page, SEEDED_ADMIN_EMAIL, SEEDED_ADMIN_PASSWORD);
-		await loginResponsePromise;
-		await expect(page).toHaveURL("/");
+			await registerAndLoginUser(page, user);
 
-		const auth = await readAuthFromStorage(page);
-		expect(auth).toBeTruthy();
-		expect(auth.token).toBeTruthy();
-		expect(auth.user?.email).toBe(SEEDED_ADMIN_EMAIL);
+			const authBeforeClose = await readAuthFromStorage(page);
+			expect(authBeforeClose).toBeTruthy();
+			expect(authBeforeClose.token).toBeTruthy();
+			expect(authBeforeClose.user?.name).toBe(user.name);
 
-		await page.goto("/about");
+			await page.close();
 
-		const { status, authorizationHeader } = await visitAdminDashboardAndGetAdminAuthStatus(page);
-		expect(status).toBe(200);
-		expect(authorizationHeader).toBe(auth.token);
+			const reopenedPage = await context.newPage();
 
-		await expect(page).toHaveURL(/\/dashboard\/admin$/);
-		await expect(page.getByText(/Admin Name\s*:/i)).toBeVisible();
-		await expect(page.getByText(/Admin Email\s*:/i)).toBeVisible();
-		await expect(page.getByText(SEEDED_ADMIN_EMAIL)).toBeVisible();
-	});
+			const { status, authorizationHeader } = await visitUserDashboardAndGetUserAuthStatus(reopenedPage);
 
-	test("session persistence after tab close/reopen: persisted token grants /dashboard/user access without re-login", async ({ browser }) => {
-		const user = buildUser("persist");
+			const authAfterReopen = await readAuthFromStorage(reopenedPage);
+			expect(authAfterReopen?.token).toBe(authBeforeClose.token);
+			expect(status).toBe(200);
+			expect(authorizationHeader).toBe(authBeforeClose.token);
 
-		const context = await browser.newContext();
-		const page = await context.newPage();
+			await expect(reopenedPage).toHaveURL(/\/dashboard\/user$/);
+			await expect(reopenedPage.locator("h3", { hasText: user.name })).toBeVisible();
+			await expect(reopenedPage.locator("h3", { hasText: user.email })).toBeVisible();
+			await expect(reopenedPage.getByRole("button", { name: user.name })).toBeVisible();
 
-		await registerAndLoginUser(page, user);
-
-		const authBeforeClose = await readAuthFromStorage(page);
-		expect(authBeforeClose).toBeTruthy();
-		expect(authBeforeClose.token).toBeTruthy();
-		expect(authBeforeClose.user?.name).toBe(user.name);
-
-		await page.close();
-
-		const reopenedPage = await context.newPage();
-
-		const { status, authorizationHeader } = await visitUserDashboardAndGetUserAuthStatus(reopenedPage);
-
-		const authAfterReopen = await readAuthFromStorage(reopenedPage);
-		expect(authAfterReopen?.token).toBe(authBeforeClose.token);
-		expect(status).toBe(200);
-		expect(authorizationHeader).toBe(authBeforeClose.token);
-
-		await expect(reopenedPage).toHaveURL(/\/dashboard\/user$/);
-		await expect(reopenedPage.locator("h3", { hasText: user.name })).toBeVisible();
-		await expect(reopenedPage.locator("h3", { hasText: user.email })).toBeVisible();
-		await expect(reopenedPage.getByRole("button", { name: user.name })).toBeVisible();
-
-		await context.close();
+			await context.close();
+		});
 	});
 });

@@ -90,7 +90,8 @@ const logoutFromNavbar = async (page, displayName) => {
 };
 
 test.describe("Profile E2E flows", () => {
-  test("valid profile update: name change updates profile, header, and dashboard", async ({ page }) => {
+  test.describe("Atomic linear workflows", () => {
+    test("valid profile update: name change updates profile, header, and dashboard", async ({ page }) => {
     const user = buildUser("valid-update");
     const updatedName = `Updated ${Date.now()}`;
 
@@ -115,9 +116,9 @@ test.describe("Profile E2E flows", () => {
     const dashboardCard = page.locator(".card.w-75.p-3");
     await expect(dashboardCard).toContainText(updatedName);
     await expect(dashboardCard).toContainText(user.email);
-  });
+    });
 
-  test("invalid profile update: empty name shows error, stays on profile, and keeps persisted name", async ({ page }) => {
+    test("invalid profile update: empty name shows error, stays on profile, and keeps persisted name", async ({ page }) => {
     const user = buildUser("empty-name");
 
     await registerUserViaUi(page, user);
@@ -142,9 +143,9 @@ test.describe("Profile E2E flows", () => {
     const dashboardCard = page.locator(".card.w-75.p-3");
     await expect(dashboardCard).toContainText(user.name);
     await expect(dashboardCard).toContainText(user.email);
-  });
+    });
 
-  test("persistence after refresh: updated name remains in profile, header, and dashboard", async ({ page }) => {
+    test("persistence after refresh: updated name remains in profile, header, and dashboard", async ({ page }) => {
     const user = buildUser("persist-name");
     const persistedName = `Persisted ${Date.now()}`;
 
@@ -174,9 +175,9 @@ test.describe("Profile E2E flows", () => {
     const dashboardCard = page.locator(".card.w-75.p-3");
     await expect(dashboardCard).toContainText(persistedName);
     await expect(dashboardCard).toContainText(user.email);
-  });
+    });
 
-  test("invalid field validation: short password is rejected with no profile API call", async ({ page }) => {
+    test("invalid field validation: short password is rejected with no profile API call", async ({ page }) => {
     const user = buildUser("invalid-short-password");
 
     await registerUserViaUi(page, user);
@@ -190,9 +191,9 @@ test.describe("Profile E2E flows", () => {
 
     await expect(page.getByText("Password must be at least 6 characters")).toBeVisible();
     expect(wasProfileRequestSent()).toBe(false);
-  });
+    });
 
-  test("invalid field validation: invalid phone format is rejected with no profile API call", async ({ page }) => {
+    test("invalid field validation: invalid phone format is rejected with no profile API call", async ({ page }) => {
     const user = buildUser("invalid-phone");
 
     await registerUserViaUi(page, user);
@@ -206,9 +207,9 @@ test.describe("Profile E2E flows", () => {
 
     await expect(page.getByText("Phone number must be in E.164 format")).toBeVisible();
     expect(wasProfileRequestSent()).toBe(false);
-  });
+    });
 
-  test("invalid field validation: future DOB is rejected with no profile API call", async ({ page }) => {
+    test("invalid field validation: future DOB is rejected with no profile API call", async ({ page }) => {
     const user = buildUser("future-dob");
 
     await registerUserViaUi(page, user);
@@ -222,10 +223,13 @@ test.describe("Profile E2E flows", () => {
 
     await expect(page.getByText("DOB cannot be in the future")).toBeVisible();
     expect(wasProfileRequestSent()).toBe(false);
+    });
   });
 
+  test.describe("Cross workflows", () => {
+
   // Loh Ze Qing Norbert, A0277473R
-  test("profile update persists across logout/login and still passes route guard checks", async ({ page }) => {
+    test("profile update persists across logout/login and still passes route guard checks", async ({ page }) => {
     const user = buildUser("profile-logout-relogin");
     const updatedName = `Relogin Name ${Date.now()}`;
 
@@ -259,5 +263,6 @@ test.describe("Profile E2E flows", () => {
     const dashboardCard = page.locator(".card.w-75.p-3");
     await expect(dashboardCard).toContainText(updatedName);
     await expect(dashboardCard).toContainText(user.email);
+    });
   });
 });

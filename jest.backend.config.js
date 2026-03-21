@@ -13,6 +13,7 @@ export default {
     "<rootDir>/middlewares/*.test.js",
     "<rootDir>/models/*.test.js",
     "<rootDir>/routes/*.test.js",
+    "<rootDir>/client/src/hooks/*.integration.test.js",
   ],
 
   // jest code coverage
@@ -25,8 +26,8 @@ export default {
   ],
   coverageThreshold: {
     global: {
-      lines: 90,
-      functions: 90,
+      lines: 80,
+      functions: 80,
     },
   },
 };

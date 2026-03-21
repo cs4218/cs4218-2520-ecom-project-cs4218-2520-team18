@@ -42,79 +42,8 @@ const loginViaUi = async (page, email, password) => {
 };
 
 test.describe("Forgot Password E2E flows", () => {
-  test("valid reset flow: reset succeeds, old password fails, new password logs in", async ({ page }) => {
-    const user = buildUser("reset-valid");
-    const newPassword = "Password456";
-
-    await registerUserViaUi(page, user);
-
-    await page.goto("/login");
-    await page.getByRole("button", { name: /forgot password/i }).click();
-    await expect(page).toHaveURL(/\/forgot-password$/);
-
-    const forgotPasswordResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/v1/auth/forgot-password") &&
-        response.request().method() === "POST" &&
-        response.status() === 200,
-    );
-
-    await submitForgotPassword(page, {
-      email: user.email,
-      answer: user.answer,
-      newPassword,
-    });
-    await forgotPasswordResponse;
-
-    await expect(page.getByText(/Password Reset Successfully/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/login$/);
-
-    await loginViaUi(page, user.email, user.password);
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByText(/Invalid Email or Password/i)).toBeVisible();
-
-    await loginViaUi(page, user.email, newPassword);
-    await expect(page).toHaveURL("/");
-    await expect(page.getByText(user.name)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
-  });
-
-  test("invalid reset flow: wrong answer keeps old password unchanged", async ({ page }) => {
-    const user = buildUser("reset-wrong-answer");
-    const newPassword = "Password789";
-
-    await registerUserViaUi(page, user);
-
-    await page.goto("/forgot-password");
-
-    const forgotPasswordResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/v1/auth/forgot-password") &&
-        response.request().method() === "POST" &&
-        response.status() === 400,
-    );
-
-    await submitForgotPassword(page, {
-      email: user.email,
-      answer: "wrong-answer",
-      newPassword,
-    });
-    await forgotPasswordResponse;
-
-    await expect(page.getByText(/Invalid Email or Answer|Wrong Email or Answer/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/forgot-password$/);
-
-    await loginViaUi(page, user.email, user.password);
-    await expect(page).toHaveURL("/");
-    await expect(page.getByText(user.name)).toBeVisible();
-
-    await page.goto("/login");
-    await loginViaUi(page, user.email, newPassword);
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByText(/Invalid Email or Password/i)).toBeVisible();
-  });
-
-  test("invalid reset flow: non-existent email shows error and stays on forgot-password", async ({ page }) => {
+  test.describe("Atomic linear workflows", () => {
+    test("invalid reset flow: non-existent email shows error and stays on forgot-password", async ({ page }) => {
     const user = buildUser("reset-missing-user");
 
     await page.goto("/forgot-password");
@@ -135,9 +64,9 @@ test.describe("Forgot Password E2E flows", () => {
 
     await expect(page.getByText(/Invalid Email or Answer|Wrong Email or Answer/i)).toBeVisible();
     await expect(page).toHaveURL(/\/forgot-password$/);
-  });
+    });
 
-  test("empty and short-password submissions: validation errors and no forgot-password API call", async ({ page }) => {
+    test("empty and short-password submissions: validation errors and no forgot-password API call", async ({ page }) => {
     let forgotPasswordRequestCount = 0;
     page.on("request", (request) => {
       if (request.url().includes("/api/v1/auth/forgot-password")) {
@@ -210,5 +139,80 @@ test.describe("Forgot Password E2E flows", () => {
     await expect(page.getByText(/New password must be at least 6 characters long/i)).toBeVisible();
     expect(forgotPasswordRequestCount).toBe(0);
     await expect(page).toHaveURL(/\/forgot-password$/);
+    });
+  });
+
+  test.describe("Cross workflows", () => {
+    test("valid reset flow: reset succeeds, old password fails, new password logs in", async ({ page }) => {
+      const user = buildUser("reset-valid");
+      const newPassword = "Password456";
+
+      await registerUserViaUi(page, user);
+
+      await page.goto("/login");
+      await page.getByRole("button", { name: /forgot password/i }).click();
+      await expect(page).toHaveURL(/\/forgot-password$/);
+
+      const forgotPasswordResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/auth/forgot-password") &&
+          response.request().method() === "POST" &&
+          response.status() === 200,
+      );
+
+      await submitForgotPassword(page, {
+        email: user.email,
+        answer: user.answer,
+        newPassword,
+      });
+      await forgotPasswordResponse;
+
+      await expect(page.getByText(/Password Reset Successfully/i)).toBeVisible();
+      await expect(page).toHaveURL(/\/login$/);
+
+      await loginViaUi(page, user.email, user.password);
+      await expect(page).toHaveURL(/\/login$/);
+      await expect(page.getByText(/Invalid Email or Password/i)).toBeVisible();
+
+      await loginViaUi(page, user.email, newPassword);
+      await expect(page).toHaveURL("/");
+      await expect(page.getByText(user.name)).toBeVisible();
+      await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
+    });
+
+    test("invalid reset flow: wrong answer keeps old password unchanged", async ({ page }) => {
+      const user = buildUser("reset-wrong-answer");
+      const newPassword = "Password789";
+
+      await registerUserViaUi(page, user);
+
+      await page.goto("/forgot-password");
+
+      const forgotPasswordResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/auth/forgot-password") &&
+          response.request().method() === "POST" &&
+          response.status() === 400,
+      );
+
+      await submitForgotPassword(page, {
+        email: user.email,
+        answer: "wrong-answer",
+        newPassword,
+      });
+      await forgotPasswordResponse;
+
+      await expect(page.getByText(/Invalid Email or Answer|Wrong Email or Answer/i)).toBeVisible();
+      await expect(page).toHaveURL(/\/forgot-password$/);
+
+      await loginViaUi(page, user.email, user.password);
+      await expect(page).toHaveURL("/");
+      await expect(page.getByText(user.name)).toBeVisible();
+
+      await page.goto("/login");
+      await loginViaUi(page, user.email, newPassword);
+      await expect(page).toHaveURL(/\/login$/);
+      await expect(page.getByText(/Invalid Email or Password/i)).toBeVisible();
+    });
   });
 });

@@ -65,63 +65,79 @@ const logoutFromNavbar = async (page, displayedName) => {
 };
 
 test.describe("UI E2E Journeys", () => {
-  // Loh Ze Qing Norbert, A0277473R
-  test("register -> login -> home reflects authenticated header state", async ({ page }) => {
-    const user = buildUniqueUser();
+  test.describe("Cross workflows", () => {
+    // Loh Ze Qing Norbert, A0277473R
+    test("register -> login -> home reflects authenticated header state", async ({
+      page,
+    }) => {
+      const user = buildUniqueUser();
 
-    await registerUser(page, user);
-    await loginUser(page, user.email, user.password);
+      await registerUser(page, user);
+      await loginUser(page, user.email, user.password);
 
-    await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Register" })).toHaveCount(0);
-    await expect(page.getByText(user.name)).toBeVisible();
-  });
+      await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Register" })).toHaveCount(0);
+      await expect(page.getByText(user.name)).toBeVisible();
+    });
 
-  // Loh Ze Qing Norbert, A0277473R
-  test("register -> forgot password reset -> login with new password", async ({ page }) => {
-    const user = buildUniqueUser();
+    // Loh Ze Qing Norbert, A0277473R
+    test("register -> forgot password reset -> login with new password", async ({
+      page,
+    }) => {
+      const user = buildUniqueUser();
 
-    await registerUser(page, user);
+      await registerUser(page, user);
 
-    await page.getByRole("button", { name: /forgot password/i }).click();
-    await expect(page).toHaveURL(/\/forgot-password$/);
+      await page.getByRole("button", { name: /forgot password/i }).click();
+      await expect(page).toHaveURL(/\/forgot-password$/);
 
-    await page.getByPlaceholder(/Enter Your Email/i).fill(user.email);
-    await page.getByPlaceholder("Enter Your Security Answer").fill(user.answer);
-    await page.getByPlaceholder("Enter Your New Password").fill(user.newPassword);
-    await page.getByRole("button", { name: "RESET PASSWORD" }).click();
+      await page.getByPlaceholder(/Enter Your Email/i).fill(user.email);
+      await page
+        .getByPlaceholder("Enter Your Security Answer")
+        .fill(user.answer);
+      await page
+        .getByPlaceholder("Enter Your New Password")
+        .fill(user.newPassword);
+      await page.getByRole("button", { name: "RESET PASSWORD" }).click();
 
-    await expect(page).toHaveURL(/\/login$/);
+      await expect(page).toHaveURL(/\/login$/);
 
-    await loginUser(page, user.email, user.newPassword);
-    await expect(page.getByText(user.name)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
-  });
+      await loginUser(page, user.email, user.newPassword);
+      await expect(page.getByText(user.name)).toBeVisible();
+      await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
+    });
 
-  // Loh Ze Qing Norbert, A0277473R
-  test("register -> login -> update profile -> logout -> protected route blocked -> re-login", async ({ page }) => {
-    const user = buildUniqueUser();
-    const updatedName = `Updated ${Date.now()}`;
+    // Loh Ze Qing Norbert, A0277473R
+    test("register -> login -> update profile -> logout -> protected route blocked -> re-login", async ({
+      page,
+    }) => {
+      const user = buildUniqueUser();
+      const updatedName = `Updated ${Date.now()}`;
 
-    await registerUser(page, user);
-    await loginUser(page, user.email, user.password);
+      await registerUser(page, user);
+      await loginUser(page, user.email, user.password);
 
-    await updateProfileName(page, user.name, user.password, updatedName);
+      await updateProfileName(page, user.name, user.password, updatedName);
 
-    await logoutFromNavbar(page, updatedName);
-    const authAfterLogout = await page.evaluate(() => localStorage.getItem("auth"));
-    expect(authAfterLogout).toBeNull();
+      await logoutFromNavbar(page, updatedName);
+      const authAfterLogout = await page.evaluate(() =>
+        localStorage.getItem("auth"),
+      );
+      expect(authAfterLogout).toBeNull();
 
-    await page.goto("/dashboard/user");
-    await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/$|\/login$/, { timeout: 12000 });
+      await page.goto("/dashboard/user");
+      await expect(page.getByText(/redirecting to you in/i)).toBeVisible();
+      await expect(page).toHaveURL(/\/$|\/login$/, { timeout: 12000 });
 
-    await loginUser(page, user.email, user.password);
-    await expect(page.getByRole("button", { name: updatedName })).toBeVisible();
+      await loginUser(page, user.email, user.password);
+      await expect(
+        page.getByRole("button", { name: updatedName }),
+      ).toBeVisible();
 
-    await openUserDashboard(page, updatedName);
-    const dashboardCard = page.locator(".card.w-75.p-3");
-    await expect(dashboardCard).toContainText(updatedName);
-    await expect(dashboardCard).toContainText(user.email);
+      await openUserDashboard(page, updatedName);
+      const dashboardCard = page.locator(".card.w-75.p-3");
+      await expect(dashboardCard).toContainText(updatedName);
+      await expect(dashboardCard).toContainText(user.email);
+    });
   });
 });
