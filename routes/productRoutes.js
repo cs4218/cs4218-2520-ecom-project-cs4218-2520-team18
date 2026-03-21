@@ -67,6 +67,9 @@ router.get("/related-product/:pid/:cid", relatedProductController);
 //category wise product
 router.get("/product-category/:slug", productCategoryController);
 
+//category wise product with pagination
+router.get("/product-category/:slug/:page", productCategoryController);
+
 //payments routes
 //token
 router.get("/braintree/token", braintreeTokenController);
