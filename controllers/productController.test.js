@@ -1590,9 +1590,13 @@ describe('Product Controller Unit Tests', () => {
   });
 
   describe('productCategoryController', () => {
-    // Helper to mock find().populate() chain
+    // Helper to mock the full query chain for pagination
     const mockCategoryProductsChain = (resolvedValue, shouldReject = false) => {
       const query = {
+        select: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
         populate: jest.fn(),
       };
       query.populate[shouldReject ? 'mockRejectedValue' : 'mockResolvedValue'](resolvedValue);
@@ -1600,7 +1604,7 @@ describe('Product Controller Unit Tests', () => {
       return query;
     };
 
-    test('should return products by category slug', async () => {
+    test('should return products by category slug (page 1, default)', async () => {
       // Arrange
       const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
       const mockProducts = [
@@ -1609,18 +1613,28 @@ describe('Product Controller Unit Tests', () => {
       ];
 
       categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
-      mockCategoryProductsChain(mockProducts);
+      const chain = mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(10);
       req.params.slug = 'electronics';
 
       // Act
       await productCategoryController(req, res);
 
       // Assert
+      expect(categoryModel.findOne).toHaveBeenCalledWith({ slug: 'electronics' });
+      expect(productModel.find).toHaveBeenCalledWith({ category: mockCategory });
+      expect(chain.select).toHaveBeenCalledWith('-photo');
+      expect(chain.skip).toHaveBeenCalledWith(0);
+      expect(chain.limit).toHaveBeenCalledWith(6);
+      expect(chain.sort).toHaveBeenCalledWith({ createdAt: -1 });
+      expect(chain.populate).toHaveBeenCalledWith('category');
+      expect(productModel.countDocuments).toHaveBeenCalledWith({ category: mockCategory });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith({
         success: true,
         category: mockCategory,
         products: mockProducts,
+        total: 10,
       });
     });
 
@@ -1647,6 +1661,130 @@ describe('Product Controller Unit Tests', () => {
       });
 
       consoleSpy.mockRestore();
+    });
+
+    test('should return second page of products with correct skip/limit', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+      const mockProducts = [
+        { _id: 'prod7', name: 'Product 7', category: mockCategory },
+        { _id: 'prod8', name: 'Product 8', category: mockCategory },
+      ];
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      const chain = mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(10);
+      req.params.slug = 'electronics';
+      req.params.page = '2';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(chain.skip).toHaveBeenCalledWith(6); // (2-1) * 6 = 6
+      expect(chain.limit).toHaveBeenCalledWith(6);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        success: true,
+        category: mockCategory,
+        products: mockProducts,
+        total: 10,
+      });
+    });
+
+    test('should return total count in response', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+      const mockProducts = [{ _id: 'prod1', name: 'Product 1' }];
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(25);
+      req.params.slug = 'electronics';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(productModel.countDocuments).toHaveBeenCalledWith({ category: mockCategory });
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          total: 25,
+        })
+      );
+    });
+
+    test('should handle empty category (no products)', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      mockCategoryProductsChain([]);
+      productModel.countDocuments = jest.fn().mockResolvedValue(0);
+      req.params.slug = 'electronics';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        success: true,
+        category: mockCategory,
+        products: [],
+        total: 0,
+      });
+    });
+
+    test('should exclude photo field from results', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+      const mockProducts = [{ _id: 'prod1', name: 'Product 1' }];
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      const chain = mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(1);
+      req.params.slug = 'electronics';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(chain.select).toHaveBeenCalledWith('-photo');
+    });
+
+    test('should populate category reference', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+      const mockProducts = [{ _id: 'prod1', name: 'Product 1' }];
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      const chain = mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(1);
+      req.params.slug = 'electronics';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(chain.populate).toHaveBeenCalledWith('category');
+    });
+
+    test('should sort by createdAt descending', async () => {
+      // Arrange
+      const mockCategory = { _id: 'cat1', name: 'Electronics', slug: 'electronics' };
+      const mockProducts = [{ _id: 'prod1', name: 'Product 1' }];
+
+      categoryModel.findOne = jest.fn().mockResolvedValue(mockCategory);
+      const chain = mockCategoryProductsChain(mockProducts);
+      productModel.countDocuments = jest.fn().mockResolvedValue(1);
+      req.params.slug = 'electronics';
+
+      // Act
+      await productCategoryController(req, res);
+
+      // Assert
+      expect(chain.sort).toHaveBeenCalledWith({ createdAt: -1 });
     });
   });
 });

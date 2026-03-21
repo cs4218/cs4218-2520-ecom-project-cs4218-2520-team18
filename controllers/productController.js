@@ -408,11 +408,24 @@ export const relatedProductController = async (req, res) => {
 export const productCategoryController = async (req, res) => {
   try {
     const category = await categoryModel.findOne({ slug: req.params.slug });
-    const products = await productModel.find({ category }).populate('category');
+    const page = req.params.page ? parseInt(req.params.page) : 1;
+    const perPage = 6;
+
+    const products = await productModel
+      .find({ category })
+      .select('-photo')
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .sort({ createdAt: -1 })
+      .populate('category');
+
+    const total = await productModel.countDocuments({ category });
+
     res.status(200).send({
       success: true,
       category,
       products,
+      total,
     });
   } catch (error) {
     console.log(error);
