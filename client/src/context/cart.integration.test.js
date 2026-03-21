@@ -11,7 +11,13 @@ function TestComponent() {
   return (
     <div>
       <div data-testid="cart">{JSON.stringify(cart)}</div>
-      <button onClick={() => setCart([...cart, 'item1'])}>Add Item</button>
+      <button onClick={() => {
+        setCart([...cart, 'item1']);
+        localStorage.setItem(
+          'cart',
+          JSON.stringify([...cart, 'item1']),
+        );
+      }}>Add Item</button>
     </div>
   );
 }
