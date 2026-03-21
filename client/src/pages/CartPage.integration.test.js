@@ -52,13 +52,11 @@ jest.mock('braintree-web-drop-in-react', () => ({
   default: function MockDropIn({ onInstance }) {
     const React = require('react');
     React.useEffect(() => {
-      setTimeout(() => {
-        onInstance({
-          requestPaymentMethod: jest
-            .fn()
-            .mockResolvedValue({ nonce: 'fake-nonce' }),
-        });
-      }, 10);
+      onInstance({
+        requestPaymentMethod: jest
+          .fn()
+          .mockResolvedValue({ nonce: 'fake-nonce' }),
+      });
     }, []);
     return React.createElement('div', { 'data-testid': 'dropin' });
   },
@@ -133,6 +131,9 @@ test('handles payment and navigates to orders', async () => {
   await screen.findByTestId('dropin');
 
   const payBtn = screen.getByRole('button', { name: /Make Payment/i });
+  await waitFor(() => {
+    expect(payBtn).not.toBeDisabled();
+  });
   fireEvent.click(payBtn);
 
   await waitFor(() => {
