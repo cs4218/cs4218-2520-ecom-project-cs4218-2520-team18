@@ -178,6 +178,35 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/user/Dashboard.test.js
    - client/src/pages/user/Profile.test.js
    - client/src/helpers/validation.test.js
+   
+   Integration Tests:
+   - routes/authRoute.integration.test.js
+   - controllers/registerController.integration.test.js
+   - controllers/loginController.integration.test.js
+   - controllers/forgotPasswordController.integration.test.js
+   - controllers/userController.integration.test.js
+   - helpers/authHelper.integration.test.js
+   - middlewares/authMiddleware.integration.test.js
+   - models/userModel.integration.test.js
+   - client/src/context/auth.integration.test.js
+   - client/src/pages/Auth/Register.integration.test.js
+   - client/src/pages/Auth/Login.integration.test.js
+   - client/src/pages/Auth/ForgotPassword.integration.test.js
+   - client/src/components/Routes/Private.integration.test.js
+   - client/src/components/Routes/AdminRoute.integration.test.js
+   - client/src/components/UserMenu.integration.test.js
+   - client/src/pages/user/Dashboard.integration.test.js
+   - client/src/pages/user/Profile.integration.test.js
+
+   End-to-End/UI Tests:
+   - e2e/registration-flows.spec.js (Registration flows)
+   - e2e/login-flows.spec.js (Login flows)
+   - e2e/logout-session-flows.spec.js (Logout and session management)
+   - e2e/forgot-password-flows.spec.js (Password reset flows)
+   - e2e/protected-routes-flows.spec.js (Protected route access control)
+   - e2e/profile-flows.spec.js (User profile update flows)
+   - e2e/auth-user-journeys.spec.js (Complete authentication journeys: Register → Login → Update Profile → Logout → Protected Route → Re-login)
+   - e2e/admin-dashboard-flows.spec.js (Admin dashboard flows)
 
 2. Lim Kok Liang  
    Unit Tests:
