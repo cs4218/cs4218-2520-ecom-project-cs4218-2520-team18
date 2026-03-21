@@ -1,3 +1,4 @@
+// Sherwyn Ng, A0255132N
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CartProvider, useCart } from './cart';
@@ -11,13 +12,14 @@ function TestComponent() {
   return (
     <div>
       <div data-testid="cart">{JSON.stringify(cart)}</div>
-      <button onClick={() => {
-        setCart([...cart, 'item1']);
-        localStorage.setItem(
-          'cart',
-          JSON.stringify([...cart, 'item1']),
-        );
-      }}>Add Item</button>
+      <button
+        onClick={() => {
+          setCart([...cart, 'item1']);
+          localStorage.setItem('cart', JSON.stringify([...cart, 'item1']));
+        }}
+      >
+        Add Item
+      </button>
     </div>
   );
 }
