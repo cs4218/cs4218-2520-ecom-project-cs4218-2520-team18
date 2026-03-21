@@ -1,3 +1,5 @@
+// Sherwyn Ng, A0255132N
+
 import mongoose from 'mongoose';
 import connectDB from './db';
 
