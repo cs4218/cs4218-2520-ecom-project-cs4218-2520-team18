@@ -12,6 +12,11 @@ jest.mock('react-router-dom', () => ({
     useNavigate: jest.fn(),
 }));
 
+// Mock cart context - component calls useCart() but tests don't interact with cart
+jest.mock('../context/cart', () => ({
+    useCart: jest.fn(() => [[], jest.fn()]),
+}));
+
 // Mock Layout component to isolate ProductDetails
 jest.mock('../components/Layout', () => ({
     __esModule: true,
