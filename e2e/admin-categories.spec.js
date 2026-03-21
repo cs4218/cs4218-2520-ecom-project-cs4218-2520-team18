@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 const adminCredentials = {
-  email: "admin@example.com",
-  password: "Admin123",
+  email: process.env.SEED_ADMIN_EMAIL || "admin.e2e@example.com",
+  password: process.env.SEED_ADMIN_PASSWORD || "Password123",
 };
 
 const loginAsAdmin = async (page) => {
