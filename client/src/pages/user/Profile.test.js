@@ -145,9 +145,9 @@ describe("Profile Component", () => {
         expect(axios.put).toHaveBeenCalledWith("/api/v1/auth/profile", {
           name: "Updated User",
           email: mockUser.email,
-          password: "",
           phone: mockUser.phone,
           address: mockUser.address,
+          DOB: mockUser.DOB,
         });
         expect(mockSetAuth).toHaveBeenCalledWith(
           expect.objectContaining({ user: updatedUser }),
@@ -714,6 +714,7 @@ describe("Profile Component", () => {
             password: " 123456 ",
             phone: mockUser.phone,
             address: mockUser.address,
+            DOB: mockUser.DOB,
           });
         });
       });
@@ -833,6 +834,7 @@ describe("Profile Component", () => {
             password: " 123456 ",
             phone: mockUser.phone,
             address: "456 Updated St",
+            DOB: mockUser.DOB,
           });
         });
       });

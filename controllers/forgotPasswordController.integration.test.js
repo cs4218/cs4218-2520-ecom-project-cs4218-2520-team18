@@ -7,6 +7,8 @@ import * as authHelper from "../helpers/authHelper.js";
 import * as validationHelper from "../helpers/validationHelper.js";
 import userModel from "../models/userModel.js";
 import { forgotPasswordController } from "./forgotPasswordController.js";
+import { loginController } from "./loginController.js";
+import { registerController } from "./registerController.js";
 
 jest.setTimeout(30000);
 
@@ -131,6 +133,93 @@ describe("forgotPasswordController - Integration Tests", () => {
 			expect(updatedUser.password).not.toBe(user.password);
 			const matches = await bcrypt.compare("BrandNewPass123", updatedUser.password);
 			expect(matches).toBe(true);
+		});
+	});
+
+	describe("Cross Workflow Integration (Register ↔ Forgot Password ↔ Login)", () => {
+		test("registers user, resets password, rejects old login, then accepts new login", async () => {
+			process.env.JWT_SECRET = "integration_jwt_secret";
+			userCounter += 1;
+			const email = `cross.workflow.${userCounter}@example.com`;
+			const originalPassword = "OriginalPass123";
+			const newPassword = "ResetPass456";
+
+			const registerReq = {
+				body: {
+					name: "Cross Workflow User",
+					email,
+					password: originalPassword,
+					phone: "+14155552671",
+					address: "123 Flow Street",
+					DOB: "2000-01-01",
+					answer: "blue",
+				},
+			};
+			const registerRes = createResponse();
+
+			await registerController(registerReq, registerRes);
+
+			expect(registerRes.status).toHaveBeenCalledWith(201);
+
+			const forgotReq = {
+				body: {
+					email: "  CROSS.WORKFLOW." + userCounter + "@EXAMPLE.COM  ",
+					answer: "  BLUE  ",
+					newPassword,
+				},
+			};
+			const forgotRes = createResponse();
+
+			await forgotPasswordController(forgotReq, forgotRes);
+
+			expect(forgotRes.status).toHaveBeenCalledWith(200);
+			expect(forgotRes.send).toHaveBeenCalledWith({
+				success: true,
+				message: "Password Reset Successfully",
+			});
+
+			const oldLoginReq = {
+				body: {
+					email,
+					password: originalPassword,
+				},
+			};
+			const oldLoginRes = createResponse();
+
+			await loginController(oldLoginReq, oldLoginRes);
+
+			expect(oldLoginRes.status).toHaveBeenCalledWith(400);
+			expect(oldLoginRes.send).toHaveBeenCalledWith({
+				success: false,
+				message: "Invalid Email or Password",
+			});
+
+			const newLoginReq = {
+				body: {
+					email,
+					password: newPassword,
+				},
+			};
+			const newLoginRes = createResponse();
+
+			await loginController(newLoginReq, newLoginRes);
+
+			expect(newLoginRes.status).toHaveBeenCalledWith(200);
+			expect(newLoginRes.send).toHaveBeenCalledWith(
+				expect.objectContaining({
+					success: true,
+					message: "Login Successful",
+					token: expect.any(String),
+					user: expect.objectContaining({ email }),
+				}),
+			);
+
+			const persistedUser = await userModel.findOne({ email });
+			expect(persistedUser).not.toBeNull();
+			expect(persistedUser.password).not.toBe(originalPassword);
+			expect(persistedUser.password).not.toBe(newPassword);
+			const newPasswordMatches = await bcrypt.compare(newPassword, persistedUser.password);
+			expect(newPasswordMatches).toBe(true);
 		});
 	});
 

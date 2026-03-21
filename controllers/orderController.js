@@ -1,4 +1,5 @@
 // Aw Jean Leng Adrian, A0277537N
+// Billy Ho Cheng En, A0252588R
 
 import orderModel from "../models/orderModel.js";
 
@@ -43,11 +44,29 @@ export const orderStatusController = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
+
+    // Validate status value
+    const validStatuses = ["Not Processed", "Processing", "Shipped", "Delivered", "Cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
     const orders = await orderModel.findByIdAndUpdate(
       orderId,
       { status },
       { new: true }
     );
+
+    if (!orders) {
+      return res.status(404).send({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
     res.json(orders);
   } catch (error) {
     console.log(error);

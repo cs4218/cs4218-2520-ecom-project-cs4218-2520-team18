@@ -1,3 +1,5 @@
+// Billy Ho Cheng En, A0252588R
+
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
@@ -15,8 +17,8 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: "Not Process",
-      enum: ["Not Process", "Processing", "Shipped", "Delivered", "Cancel"],
+      default: "Not Processed",
+      enum: ["Not Processed", "Processing", "Shipped", "Delivered", "Cancelled"],
     },
   },
   { timestamps: true }

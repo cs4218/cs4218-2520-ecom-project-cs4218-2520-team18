@@ -3,7 +3,7 @@ import { registerController } from "../controllers/registerController.js";
 import { loginController } from "../controllers/loginController.js";
 import { forgotPasswordController } from "../controllers/forgotPasswordController.js";
 import { testController } from "../controllers/testController.js";
-import { updateProfileController } from "../controllers/userController.js";
+import { updateProfileController, getAllUsersController } from "../controllers/userController.js";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 
 //router object
@@ -33,5 +33,8 @@ router.get("/admin-auth", requireSignIn, isAdmin, (req, res) => {
 
 //update profile
 router.put("/profile", requireSignIn, updateProfileController);
+
+//get all users (admin only)
+router.get("/all-users", requireSignIn, isAdmin, getAllUsersController);
 
 export default router;

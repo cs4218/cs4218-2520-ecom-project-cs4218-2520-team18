@@ -8,25 +8,16 @@ import toast from "react-hot-toast";
 import { MemoryRouter } from "react-router-dom";
 import Profile from "./Profile";
 import { AuthProvider } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
-	success: jest.fn(),
-	error: jest.fn(),
-}));
-
-jest.mock("../../components/Layout", () => ({ children, title }) => (
-	<div data-testid="layout-mock">
-		<div data-testid="layout-title">{title}</div>
-		{children}
-	</div>
-));
-
-jest.mock("../../components/UserMenu", () => () => <div data-testid="usermenu-mock">UserMenu</div>);
 
 describe("Profile Component - Integration Tests", () => {
 	let setItemSpy;
+	let toastSuccessSpy;
+	let toastErrorSpy;
 
 	const mockInitialUser = {
 		name: "Norbert Loh",
@@ -39,9 +30,13 @@ describe("Profile Component - Integration Tests", () => {
 	const renderProfile = () =>
 		render(
 			<AuthProvider>
-				<MemoryRouter>
-					<Profile />
-				</MemoryRouter>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter>
+							<Profile />
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
 			</AuthProvider>,
 		);
 
@@ -49,7 +44,12 @@ describe("Profile Component - Integration Tests", () => {
 		jest.restoreAllMocks();
 		jest.clearAllMocks();
 		localStorage.clear();
+		axios.get.mockReset();
+		axios.put.mockReset();
 		setItemSpy = jest.spyOn(Storage.prototype, "setItem");
+		toastSuccessSpy = jest.spyOn(toast, "success").mockImplementation(() => {});
+		toastErrorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+		axios.get.mockResolvedValue({ data: { category: [] } });
 
 		localStorage.setItem("auth", JSON.stringify({ user: mockInitialUser, token: "valid-token" }));
 	});
@@ -71,8 +71,8 @@ describe("Profile Component - Integration Tests", () => {
 			});
 
 			expect(screen.getByPlaceholderText("Enter Your Email")).toBeDisabled();
-			expect(screen.getByTestId("layout-title")).toHaveTextContent("Your Profile");
-			expect(screen.getByTestId("usermenu-mock")).toBeInTheDocument();
+			expect(screen.getByText("USER PROFILE")).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/dashboard/user/orders");
 		});
 	});
 
@@ -106,11 +106,12 @@ describe("Profile Component - Integration Tests", () => {
 					password: "newpassword123",
 					phone: "+6591234567",
 					address: "PGP Residences",
+					DOB: "2000-01-01",
 				});
 			});
 
 			expect(setItemSpy).toHaveBeenCalledWith("auth", expect.stringContaining('"name":"Norbert Updated"'));
-			expect(toast.success).toHaveBeenCalledWith("Profile Updated Successfully");
+			expect(toastSuccessSpy).toHaveBeenCalledWith("Profile Updated Successfully");
 		});
 
 		test("update button is disabled while request is in-flight and re-enabled afterward", async () => {
@@ -153,7 +154,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Name should be 1 to 100 characters");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -170,7 +171,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Phone number is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Phone number is required");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -187,7 +188,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Phone number must be in E.164 format");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -204,7 +205,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Date of Birth is required");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -216,7 +217,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -229,7 +230,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Date of Birth must be in YYYY-MM-DD format");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -243,7 +244,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth cannot be in the future");
+				expect(toastErrorSpy).toHaveBeenCalledWith("DOB cannot be in the future");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -260,7 +261,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Address is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Address is required");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -277,7 +278,7 @@ describe("Profile Component - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /update/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Password must be at least 6 characters");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Password must be at least 6 characters");
 			});
 			expect(axios.put).not.toHaveBeenCalled();
 		});
@@ -299,7 +300,7 @@ describe("Profile Component - Integration Tests", () => {
 				expect(axios.put).toHaveBeenCalled();
 			});
 
-			expect(toast.error).toHaveBeenCalledWith("Email already in use by another account");
+			expect(toastErrorSpy).toHaveBeenCalledWith("Email already in use by another account");
 
 			const authWrites = setItemSpy.mock.calls.filter((call) => call[0] === "auth");
 			expect(authWrites.length).toBe(1);
@@ -315,7 +316,7 @@ describe("Profile Component - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(axios.put).toHaveBeenCalled();
-				expect(toast.error).toHaveBeenCalledWith("Profile validation failed");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Profile validation failed");
 			});
 		});
 
@@ -329,7 +330,7 @@ describe("Profile Component - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(axios.put).toHaveBeenCalled();
-				expect(toast.error).toHaveBeenCalledWith("Profile Update Failed");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Profile Update Failed");
 			});
 		});
 	});
@@ -357,7 +358,7 @@ describe("Profile Component - Integration Tests", () => {
 
 			const consolePayload = JSON.stringify(consoleSpy.mock.calls);
 			expect(consolePayload).not.toContain(plainPassword);
-			expect(toast.error).toHaveBeenCalledWith("Profile Update Failed");
+			expect(toastErrorSpy).toHaveBeenCalledWith("Profile Update Failed");
 
 			consoleSpy.mockRestore();
 		});

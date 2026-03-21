@@ -450,4 +450,62 @@ describe("useCategory Hook", () => {
             expect(result.current[2].name).toBe("Clothing"); // Not "clothing"
         });
     });
+
+    // Memory Leak Prevention - isMounted flag tests
+    describe("Memory Leak Prevention (isMounted flag)", () => {
+        test("should NOT update state when unmounted before successful API response (line 15 branch)", async () => {
+            // Create a delayed promise that we control
+            let resolvePromise;
+            axios.get.mockImplementation(() => new Promise((resolve) => {
+                resolvePromise = resolve;
+            }));
+
+            const { result, unmount } = renderHook(() => useCategory());
+
+            // Initial state is empty
+            expect(result.current).toEqual([]);
+
+            // Unmount BEFORE API resolves
+            unmount();
+
+            // Now resolve the API call (after unmount)
+            resolvePromise({
+                data: {
+                    success: true,
+                    category: mockCategories,
+                },
+            });
+
+            // Wait a tick for the promise to resolve
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // State should still be empty because isMounted was false
+            expect(result.current).toEqual([]);
+        });
+
+        test("should NOT update state when unmounted before error API response (line 20 branch)", async () => {
+            // Create a delayed promise that we control
+            let rejectPromise;
+            axios.get.mockImplementation(() => new Promise((_, reject) => {
+                rejectPromise = reject;
+            }));
+
+            const { result, unmount } = renderHook(() => useCategory());
+
+            // Initial state is empty
+            expect(result.current).toEqual([]);
+
+            // Unmount BEFORE API rejects
+            unmount();
+
+            // Now reject the API call (after unmount)
+            rejectPromise(new Error("Network error"));
+
+            // Wait a tick for the promise to reject
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // State should still be empty because isMounted was false (no crash)
+            expect(result.current).toEqual([]);
+        });
+    });
 });

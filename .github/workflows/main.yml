@@ -28,15 +28,42 @@ jobs:
         run: |
           cd client
           npm install
+          npm install --save-dev acorn-import-assertions
 
       - name: Run Jest tests for frontend
         run: npm run test:frontend
         
       - name: Run Jest tests for backend
         run: npm run test:backend
+        env: 
+          BRAINTREE_MERCHANT_ID: "dummy_merchant"
+          BRAINTREE_PUBLIC_KEY: "dummy_public"
+          BRAINTREE_PRIVATE_KEY: "dummy_private"
 
       - name: Run integration tests for frontend
         run: npm run test:integration:frontend -- --coverage=false
 
       - name: Run integration tests for backend
         run: npm run test:integration:backend -- --coverage=false
+        env:
+          BRAINTREE_MERCHANT_ID: "dummy_merchant"
+          BRAINTREE_PUBLIC_KEY: "dummy_public"
+          BRAINTREE_PRIVATE_KEY: "dummy_private"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          BRAINTREE_MERCHANT_ID: ${{ secrets.BRAINTREE_MERCHANT_ID }}
+          BRAINTREE_PUBLIC_KEY: ${{ secrets.BRAINTREE_PUBLIC_KEY }}
+          BRAINTREE_PRIVATE_KEY: ${{ secrets.BRAINTREE_PRIVATE_KEY }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

@@ -1,3 +1,5 @@
+// Billy Ho Cheng En, A0252588R
+
 import {
   braintreeTokenController,
   brainTreePaymentController,
@@ -94,7 +96,7 @@ describe("createProductController", () => {
 
         await createProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -103,7 +105,7 @@ describe("createProductController", () => {
 
         await createProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -112,9 +114,9 @@ describe("createProductController", () => {
 
         await createProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
-        expect(res.send).toHaveBeenCalledWith({ 
-            error: "photo is Required and should be less then 1mb" 
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.send).toHaveBeenCalledWith({
+            error: "Photo should be less than 1MB"
         });
     });
 
@@ -129,7 +131,7 @@ describe("createProductController", () => {
 
         await createProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -200,7 +202,7 @@ describe("createProductController", () => {
         expect(res.send).toHaveBeenCalledWith({
             success: false,
             error: errorMessage,
-            message: "Error in crearing product"
+            message: "Error in creating product"
         });
     });
 
@@ -220,7 +222,7 @@ describe("createProductController", () => {
         expect(res.send).toHaveBeenCalledWith({
             success: false,
             error: errorMessage,
-            message: "Error in crearing product"
+            message: "Error in creating product"
         });
     });
 
@@ -279,7 +281,7 @@ describe("createProductController", () => {
 
             await createProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.status).toHaveBeenCalledWith(400);
         });
 
         it("should handle zero quantity", async () => {
@@ -362,7 +364,7 @@ describe("updateProductController", () => {
 
         await updateProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -371,7 +373,7 @@ describe("updateProductController", () => {
 
         await updateProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -380,9 +382,9 @@ describe("updateProductController", () => {
 
         await updateProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
-        expect(res.send).toHaveBeenCalledWith({ 
-            error: "photo is Required and should be less then 1mb" 
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.send).toHaveBeenCalledWith({
+            error: "Photo should be less than 1MB"
         });
     });
 
@@ -397,7 +399,7 @@ describe("updateProductController", () => {
 
         await updateProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.send).toHaveBeenCalledWith({ error });
     });
 
@@ -424,7 +426,7 @@ describe("updateProductController", () => {
             }),
             { new: true }
         );
-        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.status).toHaveBeenCalledWith(200);
         expect(res.send).toHaveBeenCalledWith({
             success: true,
             message: "Product Updated Successfully",
@@ -450,7 +452,7 @@ describe("updateProductController", () => {
         expect(mockProduct.photo.data).toBe(mockPhotoData);
         expect(mockProduct.photo.contentType).toBe("image/jpeg");
         expect(mockProduct.save).toHaveBeenCalled();
-        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.status).toHaveBeenCalledWith(200);
     });
 
     // Error handling tests
@@ -465,7 +467,7 @@ describe("updateProductController", () => {
         expect(res.send).toHaveBeenCalledWith({
             success: false,
             error: errorMessage,
-            message: "Error in Updte product"
+            message: "Error in Update product"
         });
     });
 
@@ -481,7 +483,7 @@ describe("updateProductController", () => {
         expect(res.send).toHaveBeenCalledWith({
             success: false,
             error: errorMessage,
-            message: "Error in Updte product"
+            message: "Error in Update product"
         });
     });
 
@@ -502,7 +504,7 @@ describe("updateProductController", () => {
         expect(res.send).toHaveBeenCalledWith({
             success: false,
             error: errorMessage,
-            message: "Error in Updte product"
+            message: "Error in Update product"
         });
     });
 
@@ -520,7 +522,7 @@ describe("updateProductController", () => {
 
             await updateProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
 
         it("should handle updating with very long product names", async () => {
@@ -534,7 +536,7 @@ describe("updateProductController", () => {
 
             await updateProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
 
         it("should handle updating with zero price", async () => {
@@ -547,7 +549,7 @@ describe("updateProductController", () => {
 
             await updateProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.status).toHaveBeenCalledWith(400);
         });
 
         it("should handle updating with zero quantity", async () => {
@@ -560,7 +562,7 @@ describe("updateProductController", () => {
 
             await updateProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
 
         it("should handle updating with different image types", async () => {
@@ -576,7 +578,7 @@ describe("updateProductController", () => {
             await updateProductController(req, res);
 
             expect(mockProduct.photo.contentType).toBe("image/png");
-            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
 
         it("should handle update with valid 24-character hex string ID", async () => {
@@ -590,7 +592,7 @@ describe("updateProductController", () => {
 
             await updateProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.status).toHaveBeenCalledWith(200);
         });
     });
 });
@@ -672,10 +674,10 @@ describe("deleteProductController", () => {
 
         await deleteProductController(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.status).toHaveBeenCalledWith(404);
         expect(res.send).toHaveBeenCalledWith({
-            success: true,
-            message: "Product Deleted successfully"
+            success: false,
+            message: "Product not found"
         });
     });
 
@@ -746,10 +748,10 @@ describe("deleteProductController", () => {
 
             await deleteProductController(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.status).toHaveBeenCalledWith(404);
             expect(res.send).toHaveBeenCalledWith({
-                success: true,
-                message: "Product Deleted successfully"
+                success: false,
+                message: "Product not found"
             });
         });
 
@@ -1085,7 +1087,7 @@ describe('Product Controller Unit Tests', () => {
       });
     });
 
-    test('should return null when product not found', async () => {
+    test('should return 404 when product not found', async () => {
       // Arrange
       mockFindOneChain(null);
       req.params.slug = 'non-existent';
@@ -1094,11 +1096,10 @@ describe('Product Controller Unit Tests', () => {
       await getSingleProductController(req, res);
 
       // Assert
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.status).toHaveBeenCalledWith(404);
       expect(res.send).toHaveBeenCalledWith({
-        success: true,
-        message: 'Single Product Fetched',
-        product: null,
+        success: false,
+        message: 'Product not found',
       });
     });
 
@@ -1158,7 +1159,7 @@ describe('Product Controller Unit Tests', () => {
       expect(res.send).toHaveBeenCalledWith(mockProduct.photo.data);
     });
 
-    test('should return nothing when photo data is null', async () => {
+    test('should return 404 when photo data is null', async () => {
       // Arrange
       const mockProduct = {
         photo: {
@@ -1173,8 +1174,27 @@ describe('Product Controller Unit Tests', () => {
       await productPhotoController(req, res);
 
       // Assert
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith(null);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: 'No photo found',
+      });
+    });
+
+    test('should return 404 when product not found', async () => {
+      // Arrange
+      mockFindByIdChain(null);
+      req.params.pid = 'nonexistent';
+
+      // Act
+      await productPhotoController(req, res);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.send).toHaveBeenCalledWith({
+        success: false,
+        message: 'Product not found',
+      });
     });
 
     test('should handle database errors', async () => {

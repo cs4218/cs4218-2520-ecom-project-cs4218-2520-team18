@@ -6,14 +6,13 @@ import "@testing-library/jest-dom/extend-expect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 import Register from "./Register";
 import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
-	success: jest.fn(),
-	error: jest.fn(),
-}));
 
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
@@ -21,11 +20,10 @@ jest.mock("react-router-dom", () => ({
 	useNavigate: () => mockNavigate,
 }));
 
-jest.mock("../../components/Layout", () => ({ children }) => (
-	<div data-testid="layout-mock">{children}</div>
-));
-
 describe("Register - Integration Tests", () => {
+	let toastSuccessSpy;
+	let toastErrorSpy;
+
 	const typeAllFields = (
 		{
 			name = "John Doe",
@@ -62,17 +60,26 @@ describe("Register - Integration Tests", () => {
 
 	const renderRegister = () =>
 		render(
-			<MemoryRouter initialEntries={["/register"]}>
-				<Routes>
-					<Route path="/register" element={<Register />} />
-				</Routes>
-			</MemoryRouter>,
+			<AuthProvider>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={["/register"]}>
+							<Routes>
+								<Route path="/register" element={<Register />} />
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
+			</AuthProvider>,
 		);
 
 	beforeEach(() => {
 		jest.restoreAllMocks();
 		jest.clearAllMocks();
 		mockNavigate.mockReset();
+		toastSuccessSpy = jest.spyOn(toast, "success").mockImplementation(() => {});
+		toastErrorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+		axios.get.mockResolvedValue({ data: { category: [] } });
 	});
 
 	describe("The Happy Path (End-to-End Registration)", () => {
@@ -100,7 +107,7 @@ describe("Register - Integration Tests", () => {
 				});
 			});
 
-			expect(toast.success).toHaveBeenCalledWith("Register Successfully, please login");
+			expect(toastSuccessSpy).toHaveBeenCalledWith("Register Successfully, please login");
 			expect(mockNavigate).toHaveBeenCalledWith("/login");
 		});
 	});
@@ -112,7 +119,7 @@ describe("Register - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Name should be 1 to 100 characters");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Name should be 1 to 100 characters");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 			expect(mockNavigate).not.toHaveBeenCalled();
@@ -127,7 +134,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(emailSpy).toHaveBeenCalledWith("not-an-email");
-				expect(toast.error).toHaveBeenCalledWith("Invalid Email");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Invalid Email");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 			expect(mockNavigate).not.toHaveBeenCalled();
@@ -142,7 +149,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(passwordSpy).toHaveBeenCalledWith("123", 6);
-				expect(toast.error).toHaveBeenCalledWith("Password must be at least 6 characters long");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Password must be at least 6 characters long");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -156,7 +163,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(phoneSpy).toHaveBeenCalledWith("+14155552671");
-				expect(toast.error).toHaveBeenCalledWith("Phone number must be in E.164 format");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Phone number must be in E.164 format");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -171,7 +178,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(dobStrictSpy).toHaveBeenCalledWith("2000-01-01");
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth must be a valid date");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Date of Birth must be a valid date");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -182,7 +189,7 @@ describe("Register - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Answer is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Answer is required");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -197,7 +204,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(futureSpy).toHaveBeenCalledWith(futureDob);
-				expect(toast.error).toHaveBeenCalledWith("Date of Birth cannot be a future date");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Date of Birth cannot be a future date");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -215,7 +222,7 @@ describe("Register - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
 			await waitFor(() => expect(axios.post).toHaveBeenCalled());
-			expect(toast.error).toHaveBeenCalledWith("Email already exists");
+			expect(toastErrorSpy).toHaveBeenCalledWith("Email already exists");
 			expect(mockNavigate).not.toHaveBeenCalled();
 		});
 	});
@@ -309,7 +316,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(consoleSpy).toHaveBeenCalledWith(apiError);
-				expect(toast.error).toHaveBeenCalledWith("Email already exists");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Email already exists");
 			});
 			expect(mockNavigate).not.toHaveBeenCalled();
 			consoleSpy.mockRestore();
@@ -326,7 +333,7 @@ describe("Register - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(consoleSpy).toHaveBeenCalledWith(unknownError);
-				expect(toast.error).toHaveBeenCalledWith("Something went wrong");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Something went wrong");
 			});
 			expect(mockNavigate).not.toHaveBeenCalled();
 			consoleSpy.mockRestore();

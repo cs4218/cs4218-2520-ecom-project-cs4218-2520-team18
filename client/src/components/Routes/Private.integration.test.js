@@ -7,15 +7,11 @@ import axios from "axios";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import PrivateRoute from "./Private";
 import { AuthProvider } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 import Dashboard from "../../pages/user/Dashboard";
 
 jest.mock("axios");
-
-jest.mock("../../components/Layout", () => ({ children }) => (
-	<div data-testid="layout-mock">{children}</div>
-));
-
-jest.mock("../../components/UserMenu", () => () => <div data-testid="usermenu-mock">UserMenu</div>);
 
 describe("PrivateRoute - Integration Tests", () => {
 	const setAuthStorage = (authValue) => {
@@ -29,32 +25,46 @@ describe("PrivateRoute - Integration Tests", () => {
 	const renderProtectedTree = () =>
 		render(
 			<AuthProvider>
-				<MemoryRouter initialEntries={["/dashboard"]}>
-					<Routes>
-						<Route path="/" element={<PrivateRoute />}>
-							<Route path="dashboard" element={<div data-testid="protected-content">Protected Dashboard</div>} />
-						</Route>
-					</Routes>
-				</MemoryRouter>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={["/dashboard"]}>
+							<Routes>
+								<Route path="/" element={<PrivateRoute />}>
+									<Route path="dashboard" element={<div data-testid="protected-content">Protected Dashboard</div>} />
+								</Route>
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
 			</AuthProvider>,
 		);
 
 	const renderProtectedDashboard = () =>
 		render(
 			<AuthProvider>
-				<MemoryRouter initialEntries={["/dashboard"]}>
-					<Routes>
-						<Route path="/" element={<PrivateRoute />}>
-							<Route path="dashboard" element={<Dashboard />} />
-						</Route>
-					</Routes>
-				</MemoryRouter>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={["/dashboard"]}>
+							<Routes>
+								<Route path="/" element={<PrivateRoute />}>
+									<Route path="dashboard" element={<Dashboard />} />
+								</Route>
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
 			</AuthProvider>,
 		);
 
 	beforeEach(() => {
 		jest.clearAllMocks();
 		localStorage.clear();
+		axios.get.mockImplementation((url) => {
+			if (url === "/api/v1/category/get-category") {
+				return Promise.resolve({ data: { category: [] } });
+			}
+			return Promise.resolve({ data: { ok: true } });
+		});
 	});
 
 	describe("The Happy Path (Access Granted)", () => {
@@ -67,19 +77,35 @@ describe("PrivateRoute - Integration Tests", () => {
 				},
 				token: "valid-token",
 			});
-			axios.get.mockResolvedValueOnce({ data: { ok: true } });
+			axios.get.mockImplementation((url) => {
+				if (url === "/api/v1/category/get-category") {
+					return Promise.resolve({ data: { category: [] } });
+				}
+				if (url === "/api/v1/auth/user-auth") {
+					return Promise.resolve({ data: { ok: true } });
+				}
+				return Promise.resolve({ data: {} });
+			});
 
 			renderProtectedDashboard();
 
 			await waitFor(() => {
-				expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+				expect(axios.get).toHaveBeenCalledWith(
+					"/api/v1/auth/user-auth",
+					expect.objectContaining({
+						headers: expect.objectContaining({
+							Authorization: "valid-token",
+						}),
+					}),
+				);
 			});
 
 			await waitFor(() => {
-				expect(screen.getByText("Dashboard User")).toBeInTheDocument();
+				expect(screen.getByRole("heading", { name: "Dashboard User" })).toBeInTheDocument();
 				expect(screen.getByText("dashboard.user@example.com")).toBeInTheDocument();
 				expect(screen.getByText("123 Dashboard Street")).toBeInTheDocument();
-				expect(screen.getByTestId("usermenu-mock")).toBeInTheDocument();
+				expect(screen.getByRole("link", { name: "Profile" })).toBeInTheDocument();
+				expect(screen.getByRole("link", { name: "Orders" })).toBeInTheDocument();
 			});
 		});
 
@@ -91,7 +117,14 @@ describe("PrivateRoute - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(axios.get).toHaveBeenCalledTimes(1);
-				expect(axios.get).toHaveBeenCalledWith("/api/v1/auth/user-auth");
+				expect(axios.get).toHaveBeenCalledWith(
+					"/api/v1/auth/user-auth",
+					expect.objectContaining({
+						headers: expect.objectContaining({
+							Authorization: "valid-token",
+						}),
+					}),
+				);
 			});
 
 			await waitFor(() => {
@@ -163,7 +196,15 @@ describe("PrivateRoute - Integration Tests", () => {
 
 		test("backend rejection (ok=false) keeps gate closed on Spinner", async () => {
 			setAuthStorage({ user: { name: "Test User" }, token: "forged-token" });
-			axios.get.mockResolvedValueOnce({ data: { ok: false } });
+			axios.get.mockImplementation((url) => {
+				if (url === "/api/v1/auth/user-auth") {
+					return Promise.resolve({ data: { ok: false } });
+				}
+				if (url === "/api/v1/category/get-category") {
+					return Promise.resolve({ data: { category: [] } });
+				}
+				return Promise.resolve({ data: {} });
+			});
 
 			renderProtectedTree();
 
@@ -177,7 +218,15 @@ describe("PrivateRoute - Integration Tests", () => {
 
 		test("network crash is caught and safely falls back to Spinner", async () => {
 			setAuthStorage({ user: { name: "Test User" }, token: "valid-token" });
-			axios.get.mockRejectedValueOnce(new Error("Network Error"));
+			axios.get.mockImplementation((url) => {
+				if (url === "/api/v1/auth/user-auth") {
+					return Promise.reject(new Error("Network Error"));
+				}
+				if (url === "/api/v1/category/get-category") {
+					return Promise.resolve({ data: { category: [] } });
+				}
+				return Promise.resolve({ data: {} });
+			});
 
 			renderProtectedTree();
 
