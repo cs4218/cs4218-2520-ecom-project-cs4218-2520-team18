@@ -938,5 +938,137 @@ describe("productController - Integration Tests", () => {
             expect(payload.category).toBeNull();
             expect(payload.products).toHaveLength(0);
         });
+
+        test("supports pagination - page 1", async () => {
+            // Seed 10 products in test category
+            for (let i = 0; i < 10; i++) {
+                await seedProduct({ name: `Electronics Product ${i + 1}` });
+            }
+
+            const req = { params: { slug: "electronics", page: "1" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.success).toBe(true);
+            expect(payload.products).toHaveLength(6); // perPage = 6
+            expect(payload.total).toBe(10);
+            expect(payload.category.name).toBe("Electronics");
+        });
+
+        test("supports pagination - page 2", async () => {
+            // Seed 10 products in test category
+            for (let i = 0; i < 10; i++) {
+                await seedProduct({ name: `Electronics Product ${i + 1}` });
+            }
+
+            const req = { params: { slug: "electronics", page: "2" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.success).toBe(true);
+            expect(payload.products).toHaveLength(4); // 10 - 6 = 4 remaining
+            expect(payload.total).toBe(10);
+        });
+
+        test("returns correct total count", async () => {
+            for (let i = 0; i < 15; i++) {
+                await seedProduct({ name: `Electronics Product ${i + 1}` });
+            }
+
+            const req = { params: { slug: "electronics" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.total).toBe(15);
+        });
+
+        test("filters by category only - excludes other categories", async () => {
+            // Create another category
+            const clothingCategory = await seedCategory({ name: "Clothing", slug: "clothing" });
+
+            // Seed 10 products in electronics
+            for (let i = 0; i < 10; i++) {
+                await seedProduct({ name: `Electronics Product ${i + 1}` });
+            }
+
+            // Seed 5 products in clothing
+            for (let i = 0; i < 5; i++) {
+                await productModel.create({
+                    name: `Clothing Product ${i + 1}`,
+                    slug: `clothing-product-${i + 1}`,
+                    description: "Clothing description",
+                    price: 49.99,
+                    category: clothingCategory._id,
+                    quantity: 10,
+                });
+            }
+
+            // Query electronics page 1
+            const req = { params: { slug: "electronics", page: "1" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.success).toBe(true);
+            expect(payload.products).toHaveLength(6);
+            expect(payload.total).toBe(10); // Only electronics products
+            // Verify all returned products are electronics
+            payload.products.forEach(product => {
+                expect(product.name).toContain("Electronics");
+            });
+        });
+
+        test("sorts by newest first (createdAt descending)", async () => {
+            // Create products with delays to ensure different timestamps
+            await seedProduct({ name: "Old Product" });
+            await new Promise(resolve => setTimeout(resolve, 10));
+            await seedProduct({ name: "Newer Product" });
+            await new Promise(resolve => setTimeout(resolve, 10));
+            await seedProduct({ name: "Newest Product" });
+
+            const req = { params: { slug: "electronics" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.products).toHaveLength(3);
+            // Check products are sorted by newest first
+            expect(payload.products[0].name).toBe("Newest Product");
+            expect(payload.products[1].name).toBe("Newer Product");
+            expect(payload.products[2].name).toBe("Old Product");
+        });
+
+        test("excludes photo field from results", async () => {
+            const photoBuffer = Buffer.from("fake photo data");
+            await seedProduct({
+                name: "Product with photo",
+                photo: { data: photoBuffer, contentType: "image/jpeg" }
+            });
+
+            const req = { params: { slug: "electronics" } };
+            const res = createResponse();
+
+            await productCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            const payload = res.send.mock.calls[0][0];
+            expect(payload.products).toHaveLength(1);
+            // Verify photo field is excluded (select('-photo') removes it from query)
+            const productKeys = Object.keys(payload.products[0].toObject ? payload.products[0].toObject() : payload.products[0]);
+            expect(productKeys).not.toContain('photo');
+        });
     });
 });
