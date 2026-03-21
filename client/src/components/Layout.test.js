@@ -2,7 +2,6 @@
 import React from 'react';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import Layout from '../components/Layout';
-import { beforeEach } from 'node:test';
 
 jest.mock('../components/Header', () => () => <div data-testid="header" />);
 
