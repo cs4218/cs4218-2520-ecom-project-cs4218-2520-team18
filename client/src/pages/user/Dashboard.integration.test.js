@@ -4,33 +4,37 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import "@testing-library/jest-dom/extend-expect";
+import axios from "axios";
 import Dashboard from "./Dashboard";
 import { AuthProvider } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 
-jest.mock("../../components/Layout", () => ({ children, title }) => (
-	<div data-testid="layout-mock">
-		<div data-testid="layout-title">{title}</div>
-		{children}
-	</div>
-));
+jest.mock("axios");
 
 describe("Dashboard - Integration Tests", () => {
 	const renderDashboardIntegration = (initialPath = "/dashboard/user") =>
 		render(
 			<AuthProvider>
-				<MemoryRouter initialEntries={[initialPath]}>
-					<Routes>
-						<Route path="/dashboard/user" element={<Dashboard />} />
-						<Route path="/dashboard/user/profile" element={<div data-testid="profile-page">Profile Page Content</div>} />
-						<Route path="/dashboard/user/orders" element={<div data-testid="orders-page">Orders Page Content</div>} />
-					</Routes>
-				</MemoryRouter>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={[initialPath]}>
+							<Routes>
+								<Route path="/dashboard/user" element={<Dashboard />} />
+								<Route path="/dashboard/user/profile" element={<div data-testid="profile-page">Profile Page Content</div>} />
+								<Route path="/dashboard/user/orders" element={<div data-testid="orders-page">Orders Page Content</div>} />
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
 			</AuthProvider>,
 		);
 
 	beforeEach(() => {
 		jest.clearAllMocks();
 		localStorage.clear();
+		axios.get.mockReset();
+		axios.get.mockResolvedValue({ data: { category: [] } });
 	});
 
 	test("integrates AuthContext + Layout + UserMenu and renders full dashboard profile", async () => {
@@ -48,12 +52,12 @@ describe("Dashboard - Integration Tests", () => {
 		renderDashboardIntegration();
 
 		await waitFor(() => {
-			expect(screen.getByText("Norbert Loh")).toBeInTheDocument();
+			expect(screen.getByRole("heading", { name: "Norbert Loh" })).toBeInTheDocument();
 			expect(screen.getByText("norbert@u.nus.edu")).toBeInTheDocument();
 			expect(screen.getByText("School of Computing, Singapore")).toBeInTheDocument();
 		});
 
-		expect(screen.getByTestId("layout-title")).toHaveTextContent("Dashboard - Ecommerce App");
+		expect(screen.getByText("🛒 Virtual Vault")).toBeInTheDocument();
 		expect(screen.getByRole("link", { name: /profile/i })).toBeInTheDocument();
 		expect(screen.getByRole("link", { name: /orders/i })).toBeInTheDocument();
 	});
@@ -64,7 +68,7 @@ describe("Dashboard - Integration Tests", () => {
 		const { container } = renderDashboardIntegration();
 
 		await waitFor(() => {
-			expect(screen.getByTestId("layout-title")).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: /profile/i })).toBeInTheDocument();
 		});
 
 		expect(screen.getByRole("link", { name: /profile/i })).toBeInTheDocument();

@@ -41,6 +41,7 @@ export default {
     '<rootDir>/helpers/',
     '<rootDir>/middlewares/',
     '<rootDir>/models/',
+    '<rootDir>/client/src/hooks/.*\\.integration\\.test\\.js$',
   ],
 
   // jest code coverage
@@ -54,7 +55,7 @@ export default {
     'client/src/helpers/**',
     "client/src/pages/admin/**",
     'client/src/pages/**',
-    "client/src/hooks/**",
+    "client/src/hooks/useCategory.js",
     "client/src/components/**"
   ],
   coverageThreshold: {

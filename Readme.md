@@ -94,6 +94,29 @@ To download and use the MERN (MongoDB, Express.js, React.js, Node.js) app from G
    - Use `npm run dev` to run the app from root directory, which starts the development server.
    - Navigate to `http://localhost:3000` to access the application.
 
+### 4. Seeding an Admin User for E2E
+
+The backend seeds an admin account only when `E2E_SEED_ADMIN=true`.
+This is used by Playwright E2E startup and is idempotent (create once, then update if needed).
+
+- Default seeded admin login:
+   - Email: `admin.e2e@example.com`
+   - Password: `Password123`
+
+The Playwright config already enables this flag for E2E runs. You can customize seed values with:
+
+```env
+DISABLE_ADMIN_SEED=false
+E2E_SEED_ADMIN=true
+SEED_ADMIN_NAME=E2E Admin User
+SEED_ADMIN_EMAIL=admin.e2e@example.com
+SEED_ADMIN_PASSWORD=Password123
+SEED_ADMIN_PHONE=+14155550000
+SEED_ADMIN_ADDRESS=1 Admin Street
+SEED_ADMIN_ANSWER=blue
+SEED_ADMIN_DOB=2000-01-01
+```
+
 ## 5. Unit Testing with Jest
 
 Unit testing is a crucial aspect of software development aimed at verifying the functionality of individual units or components of a software application. It involves isolating these units and subjecting them to various test scenarios to ensure their correctness.  

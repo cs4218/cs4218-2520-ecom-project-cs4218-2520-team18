@@ -2,6 +2,30 @@ import userModel from "../models/userModel.js";
 import { hashPassword } from "../helpers/authHelper.js";
 import { validatePhoneE164, validatePassword, validateDOB, validateDOBNotFuture } from "../helpers/validationHelper.js";
 
+// Billy Ho Cheng En, A0252588R
+// Get all users
+export const getAllUsersController = async (req, res) => {
+  try {
+    const users = await userModel
+      .find({})
+      .select("-password -answer")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).send({
+      success: true,
+      message: "All users fetched successfully",
+      users,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error while getting all users",
+      error,
+    });
+  }
+};
+
 // Update profile
 export const updateProfileController = async (req, res) => {
   try {
@@ -72,7 +96,9 @@ export const updateProfileController = async (req, res) => {
       },
       { new: true }
     );
-    const { password: _password, ...updatedUserSensitive } = updatedUser;
+    // Convert to plain object before destructuring, fallback to plain object if toObject doesn't exist (e.g., in mocked tests)
+    const updatedUserObj = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+    const { password: _password, ...updatedUserSensitive } = updatedUserObj;
     return res.status(200).send({
       success: true,
       message: "Profile Updated Successfully",

@@ -6,14 +6,13 @@ import "@testing-library/jest-dom/extend-expect";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "../../context/auth";
+import { CartProvider } from "../../context/cart";
+import { SearchProvider } from "../../context/search";
 import ForgotPassword from "./ForgotPassword";
 import * as validationHelpers from "../../helpers/validation";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
-	success: jest.fn(),
-	error: jest.fn(),
-}));
 
 const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
@@ -21,11 +20,10 @@ jest.mock("react-router-dom", () => ({
 	useNavigate: () => mockNavigate,
 }));
 
-jest.mock("../../components/Layout", () => ({ children }) => (
-	<div data-testid="layout-mock">{children}</div>
-));
-
 describe("ForgotPassword - Integration Tests", () => {
+	let toastSuccessSpy;
+	let toastErrorSpy;
+
 	const typeFields = (
 		{
 			email = "test@test.com",
@@ -46,17 +44,26 @@ describe("ForgotPassword - Integration Tests", () => {
 
 	const renderForgotPassword = () =>
 		render(
-			<MemoryRouter initialEntries={["/forgot-password"]}>
-				<Routes>
-					<Route path="/forgot-password" element={<ForgotPassword />} />
-				</Routes>
-			</MemoryRouter>,
+			<AuthProvider>
+				<CartProvider>
+					<SearchProvider>
+						<MemoryRouter initialEntries={["/forgot-password"]}>
+							<Routes>
+								<Route path="/forgot-password" element={<ForgotPassword />} />
+							</Routes>
+						</MemoryRouter>
+					</SearchProvider>
+				</CartProvider>
+			</AuthProvider>,
 		);
 
 	beforeEach(() => {
 		jest.restoreAllMocks();
 		jest.clearAllMocks();
 		mockNavigate.mockReset();
+		toastSuccessSpy = jest.spyOn(toast, "success").mockImplementation(() => {});
+		toastErrorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+		axios.get.mockResolvedValue({ data: { category: [] } });
 	});
 
 	describe("The Happy Path (End-to-End Reset)", () => {
@@ -80,7 +87,7 @@ describe("ForgotPassword - Integration Tests", () => {
 				});
 			});
 
-			expect(toast.success).toHaveBeenCalledWith("Password Reset Successfully");
+			expect(toastSuccessSpy).toHaveBeenCalledWith("Password Reset Successfully");
 			expect(mockNavigate).toHaveBeenCalledWith("/login");
 		});
 	});
@@ -91,7 +98,7 @@ describe("ForgotPassword - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Email is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Email is required");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 			expect(mockNavigate).not.toHaveBeenCalled();
@@ -106,7 +113,7 @@ describe("ForgotPassword - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(emailSpy).toHaveBeenCalledWith("not-an-email");
-				expect(toast.error).toHaveBeenCalledWith("Invalid email format");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Invalid email format");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -117,7 +124,7 @@ describe("ForgotPassword - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Security answer is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("Security answer is required");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -128,7 +135,7 @@ describe("ForgotPassword - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
 
 			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("New password is required");
+				expect(toastErrorSpy).toHaveBeenCalledWith("New password is required");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -142,7 +149,7 @@ describe("ForgotPassword - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(passwordSpy).toHaveBeenCalledWith("123");
-				expect(toast.error).toHaveBeenCalledWith("New password must be at least 6 characters long");
+				expect(toastErrorSpy).toHaveBeenCalledWith("New password must be at least 6 characters long");
 			});
 			expect(axios.post).not.toHaveBeenCalled();
 		});
@@ -160,7 +167,7 @@ describe("ForgotPassword - Integration Tests", () => {
 			fireEvent.click(screen.getByRole("button", { name: /reset password/i }));
 
 			await waitFor(() => expect(axios.post).toHaveBeenCalled());
-			expect(toast.error).toHaveBeenCalledWith("Wrong Email or Answer");
+			expect(toastErrorSpy).toHaveBeenCalledWith("Wrong Email or Answer");
 			expect(mockNavigate).not.toHaveBeenCalled();
 		});
 	});
@@ -235,7 +242,7 @@ describe("ForgotPassword - Integration Tests", () => {
 			await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(apiError));
 			const consolePayload = JSON.stringify(consoleSpy.mock.calls);
 			expect(consolePayload).not.toContain(plainPassword);
-			expect(toast.error).toHaveBeenCalledWith("Network Error");
+			expect(toastErrorSpy).toHaveBeenCalledWith("Network Error");
 			consoleSpy.mockRestore();
 		});
 
@@ -250,7 +257,7 @@ describe("ForgotPassword - Integration Tests", () => {
 
 			await waitFor(() => {
 				expect(consoleSpy).toHaveBeenCalledWith(unknownError);
-				expect(toast.error).toHaveBeenCalledWith("An unexpected error occurred");
+				expect(toastErrorSpy).toHaveBeenCalledWith("An unexpected error occurred");
 			});
 			consoleSpy.mockRestore();
 		});
