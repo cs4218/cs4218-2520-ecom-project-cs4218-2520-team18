@@ -58,7 +58,7 @@ jest.mock('braintree-web-drop-in-react', () => ({
             .fn()
             .mockResolvedValue({ nonce: 'fake-nonce' }),
         });
-      }, 1000);
+      }, 10);
     }, []);
     return React.createElement('div', { 'data-testid': 'dropin' });
   },
