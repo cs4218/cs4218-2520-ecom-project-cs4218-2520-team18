@@ -9,6 +9,11 @@ export default function AdminRoute() {
     const [auth] = useAuth();
 
     useEffect(()=> {
+        if (!auth?.token) {
+            setOk(false);
+            return;
+        }
+
         const authCheck = async() => {
             try {
                 const res = await axios.get("/api/v1/auth/admin-auth", {
