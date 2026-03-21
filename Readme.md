@@ -233,6 +233,16 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/Categories.test.js
    - client/src/pages/Search.test.js
 
+   Integration Tests:
+   - controllers/orderController.integration.test.js
+   - controllers/searchProduct.integration.test.js
+   - client/src/pages/Search.integration.test.js
+   - client/src/hooks/useCategory.integration.test.js
+
+   UI Tests:
+   - e2e/orders-flows.spec.js
+   - e2e/search-flows.spec.js
+
 
 
 ## 7. AI Declaration
