@@ -1,3 +1,4 @@
+// Sherwyn Ng, A0255132N
 import { test, expect } from '@playwright/test';
 
 test.describe('Footer UI & Navigation', () => {
