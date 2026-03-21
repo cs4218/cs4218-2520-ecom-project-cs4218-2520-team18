@@ -6,19 +6,21 @@ const Spinner = ({ path = "login" }) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (count <= 0) {
-      navigate(`/${path}`, {
-        state: location.pathname,
+    const interval = setInterval(() => {
+      setCount((prevValue) => {
+        const nextValue = prevValue - 1;
+        if (nextValue <= 0) {
+          clearInterval(interval);
+          navigate(`/${path}`, {
+            state: location.pathname,
+          });
+        }
+        return nextValue;
       });
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setCount((prevValue) => prevValue - 1);
     }, 1000);
 
-    return () => clearTimeout(timeout);
-  }, [count, navigate, location.pathname, path]);
+    return () => clearInterval(interval);
+  }, [navigate, location.pathname, path]);
   return (
     <>
       <div
