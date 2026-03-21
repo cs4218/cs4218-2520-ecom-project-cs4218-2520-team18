@@ -28,36 +28,62 @@ const loginAsAdmin = async (page) => {
 };
 
 test.describe("Admin categories", () => {
-  // Lim Kok Liang, A0252776U
-  test("admin can create, update, and delete a category", async ({ page }) => {
-    const timestamp = Date.now();
-    const categoryName = `E2E Category ${timestamp}`;
-    const updatedCategoryName = `E2E Category Updated ${timestamp}`;
+  test.describe("success cases", () => {
+    // Lim Kok Liang, A0252776U
+    test("admin can create, update, and delete a category", async ({ page }) => {
+      const timestamp = Date.now();
+      const categoryName = `E2E Category ${timestamp}`;
+      const updatedCategoryName = `E2E Category Updated ${timestamp}`;
 
-    await loginAsAdmin(page);
-    await page.goto("/dashboard/admin/create-category");
-    await expect(page.getByRole("heading", { name: "Manage Category" })).toBeVisible();
+      await loginAsAdmin(page);
+      await page.goto("/dashboard/admin/create-category");
+      await expect(page.getByRole("heading", { name: "Manage Category" })).toBeVisible();
 
-    const createCategoryPanel = page.locator(".p-3.w-50");
-    const createInput = createCategoryPanel.locator(
-      "input[placeholder='Enter new category']"
-    );
-    await expect(createInput).toBeVisible();
-    await createInput.fill(categoryName);
-    await createCategoryPanel.getByRole("button", { name: "Submit" }).click();
+      const createCategoryPanel = page.locator(".p-3.w-50");
+      const createInput = createCategoryPanel.locator(
+        "input[placeholder='Enter new category']"
+      );
+      await expect(createInput).toBeVisible();
+      await createInput.fill(categoryName);
+      await createCategoryPanel.getByRole("button", { name: "Submit" }).click();
 
-    const row = page.getByRole("row", { name: new RegExp(categoryName) });
-    await expect(row).toBeVisible();
+      const row = page.getByRole("row", { name: new RegExp(categoryName) });
+      await expect(row).toBeVisible();
 
-    await row.getByRole("button", { name: "Edit" }).click();
-    const modal = page.locator(".ant-modal");
-    await modal.getByPlaceholder("Enter new category").fill(updatedCategoryName);
-    await modal.getByRole("button", { name: "Submit" }).click();
+      await row.getByRole("button", { name: "Edit" }).click();
+      const modal = page.locator(".ant-modal");
+      await modal.getByPlaceholder("Enter new category").fill(updatedCategoryName);
+      await modal.getByRole("button", { name: "Submit" }).click();
 
-    const updatedRow = page.getByRole("row", { name: new RegExp(updatedCategoryName) });
-    await expect(updatedRow).toBeVisible();
+      const updatedRow = page.getByRole("row", { name: new RegExp(updatedCategoryName) });
+      await expect(updatedRow).toBeVisible();
 
-    await updatedRow.getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(updatedCategoryName)).toHaveCount(0);
+      await updatedRow.getByRole("button", { name: "Delete" }).click();
+      await expect(page.getByText(updatedCategoryName)).toHaveCount(0);
+    });
+  });
+
+  test.describe("fail cases", () => {
+    test("admin sees validation error when creating category with empty name", async ({ page }) => {
+      await loginAsAdmin(page);
+      await page.goto("/dashboard/admin/create-category");
+      await expect(page.getByRole("heading", { name: "Manage Category" })).toBeVisible();
+
+      const createCategoryPanel = page.locator(".p-3.w-50");
+      const createInput = createCategoryPanel.locator(
+        "input[placeholder='Enter new category']"
+      );
+      await createInput.fill("   ");
+
+      const createCategoryResponse = page.waitForResponse((response) =>
+        response.url().includes("/api/v1/category/create-category") &&
+        response.status() >= 400
+      );
+
+      await createCategoryPanel.getByRole("button", { name: "Submit" }).click();
+      await createCategoryResponse;
+
+      await expect(page.getByText("somthing went wrong in input form")).toBeVisible();
+    });
   });
 });

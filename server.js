@@ -10,7 +10,6 @@ import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoute.js'
 import cors from "cors";
-import { seedTestData } from "./config/seedTestData.js";
 
 // configure env
 dotenv.config();
