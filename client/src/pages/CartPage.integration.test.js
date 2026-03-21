@@ -52,11 +52,13 @@ jest.mock('braintree-web-drop-in-react', () => ({
   default: function MockDropIn({ onInstance }) {
     const React = require('react');
     React.useEffect(() => {
-      onInstance({
-        requestPaymentMethod: jest
-          .fn()
-          .mockResolvedValue({ nonce: 'fake-nonce' }),
-      });
+      setTimeout(() => {
+        onInstance({
+          requestPaymentMethod: jest
+            .fn()
+            .mockResolvedValue({ nonce: 'fake-nonce' }),
+        });
+      }, 1000);
     }, []);
     return React.createElement('div', { 'data-testid': 'dropin' });
   },
