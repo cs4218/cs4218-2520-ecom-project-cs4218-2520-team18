@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import Layout from './Layout';
 import Header from './Header';
 import Footer from './Footer';
-import { Helmet } from 'react-helmet';
 import '@testing-library/jest-dom';
 
 jest.mock('./Header', () => {
@@ -21,27 +20,27 @@ jest.mock('./Footer', () => {
 });
 
 let helmetChildren = null;
-jest.mock('react-helmet', () => {
-  const React = require('react');
-  return {
-    Helmet: ({ children, ...props }) => {
-      const enhancedChildren = React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type === 'meta') {
-          return React.cloneElement(child, {
-            'data-testid': 'helmet-meta',
-            ...child.props,
-          });
-        }
-        return child;
-      });
-      return (
-        <div data-testid="helmet-mock" {...props}>
-          {enhancedChildren}
-        </div>
-      );
-    },
-  };
-});
+// jest.mock('react-helmet', () => {
+//   const React = require('react');
+//   return {
+//     Helmet: ({ children, ...props }) => {
+//       const enhancedChildren = React.Children.map(children, (child) => {
+//         if (React.isValidElement(child) && child.type === 'meta') {
+//           return React.cloneElement(child, {
+//             'data-testid': 'helmet-meta',
+//             ...child.props,
+//           });
+//         }
+//         return child;
+//       });
+//       return (
+//         <div data-testid="helmet-mock" {...props}>
+//           {enhancedChildren}
+//         </div>
+//       );
+//     },
+//   };
+// });
 
 jest.mock('react-hot-toast', () => ({
   Toaster: () => <div data-testid="mock-toaster">Toaster</div>,
