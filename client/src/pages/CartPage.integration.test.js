@@ -47,6 +47,20 @@ jest.mock('react-hot-toast', () => ({
 //     return React.createElement('div', { 'data-testid': 'dropin' });
 //   },
 // }));
+jest.mock('braintree-web-drop-in-react', () => ({
+  __esModule: true,
+  default: function MockDropIn({ onInstance }) {
+    const React = require('react');
+    React.useEffect(() => {
+      onInstance({
+        requestPaymentMethod: jest
+          .fn()
+          .mockResolvedValue({ nonce: 'fake-nonce' }),
+      });
+    }, []);
+    return React.createElement('div', { 'data-testid': 'dropin' });
+  },
+}));
 
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => {
