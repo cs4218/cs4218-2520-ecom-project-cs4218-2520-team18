@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CartPage from './CartPage';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -38,7 +32,6 @@ jest.mock('react-hot-toast', () => ({
   success: jest.fn(),
   Toaster: () => <div data-testid="toaster" />,
 }));
-
 
 // jest.mock('braintree-web-drop-in-react', () => ({
 //   __esModule: true,
@@ -117,7 +110,7 @@ test('shows address and update button for logged-in user', () => {
 
 test('handles payment and navigates to orders', async () => {
   axios.get.mockResolvedValue({ data: { clientToken: 'token' } });
-  axios.post.mockResolvedValue({ data: {} });
+  axios.post.mockResolvedValue({ data: { success: true } });
 
   renderCartPage();
 
