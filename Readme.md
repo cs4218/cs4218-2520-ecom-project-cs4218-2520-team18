@@ -221,6 +221,17 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/admin/CreateCategory.test.js
    - client/src/pages/admin/AdminOrders.test.js
 
+   Integration Tests:
+    - client/src/pages/admin/Products.integration.test.js
+    - client/src/pages/admin/CreateProduct.integration.test.js
+    - client/src/pages/admin/UpdateProduct.integration.test.js
+
+   End-to-End/UI Tests:
+   - e2e/admin-categories.spec.js (Admin category management flows)
+   - e2e/admin-products.spec.js (Admin product management flows)
+   - e2e/admin-orders.spec.js (Admin order management flows)
+   - e2e/admin-users.spec.js (Admin user management flows)
+
 3. Sherwyn Ng Cheng Xin  
    Unit Tests:
    - client/src/pages/Contact.test.js
