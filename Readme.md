@@ -100,8 +100,8 @@ The backend seeds an admin account only when `E2E_SEED_ADMIN=true`.
 This is used by Playwright E2E startup and is idempotent (create once, then update if needed).
 
 - Default seeded admin login:
-   - Email: `admin.e2e@example.com`
-   - Password: `Password123`
+  - Email: `admin.e2e@example.com`
+  - Password: `Password123`
 
 The Playwright config already enables this flag for E2E runs. You can customize seed values with:
 
@@ -158,7 +158,8 @@ To begin unit testing with Jest in your project, follow these steps:
      ```
 
 ## 6. Workload
-1. Loh Ze Qing Norbert   
+
+1. Loh Ze Qing Norbert  
    Unit Tests:
    - helpers/authHelper.test.js
    - helpers/validationHelper.test.js
@@ -178,7 +179,7 @@ To begin unit testing with Jest in your project, follow these steps:
    - client/src/pages/user/Dashboard.test.js
    - client/src/pages/user/Profile.test.js
    - client/src/helpers/validation.test.js
-   
+
    Integration Tests:
    - routes/authRoute.integration.test.js
    - controllers/registerController.integration.test.js
@@ -236,20 +237,35 @@ To begin unit testing with Jest in your project, follow these steps:
    - config/db.test.js
    - controllers/productController.test.js
 
+   Integration Tests:
+   - client/src/components/Footer.integration.test.js
+   - client/src/components/Header.integration.test.js
+   - client/src/components/Layout.integration.test.js
+   - client/src/context/cart.integration.test.js
+   - client/src/pages/CartPage.integration.test.js
+   - client/src/pages/HomePage.integration.test.js
+   - config/db.integration.test.js
+
+   End-to-End/UI Tests:
+   - e2e/footer-flows.spec.js
+   - e2e/header-flows.spec.js
+   - e2e/homepage-flow.spec.js
+   - e2e/static-pages-flow.spec.js
+
 4. Billy Ho Cheng En  
    Unit Tests:
    - client/src/pages/ProductDetails.test.js
    - client/src/pages/categoryProduct.test.js
    - controllers/productController.test.js
-      - getProductController
-      - getSingleProductController
-      - productPhotoController
-      - productFiltersController
-      - productCountController
-      - productListController
-      - searchProductController
-      - realtedProductController
-      - productCategoryController
+     - getProductController
+     - getSingleProductController
+     - productPhotoController
+     - productFiltersController
+     - productCountController
+     - productListController
+     - searchProductController
+     - realtedProductController
+     - productCategoryController
 
    Integration Tests:
    - client/src/components/AdminMenu.integration.test.js
@@ -259,7 +275,7 @@ To begin unit testing with Jest in your project, follow these steps:
    - controllers/orderController.integration.test.js
    - controllers/categoryController.integration.test.js
    - controllers/productController.integration.test.js
-   
+
    End-to-End/UI Tests:
    - e2e/browsing-flows.spec.js
    - e2e/cart-flows.spec.js
@@ -284,8 +300,6 @@ To begin unit testing with Jest in your project, follow these steps:
    UI Tests:
    - e2e/orders-flows.spec.js
    - e2e/search-flows.spec.js
-
-
 
 ## 7. AI Declaration
 
