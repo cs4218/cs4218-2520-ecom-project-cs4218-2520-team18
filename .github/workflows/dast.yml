@@ -1,6 +1,8 @@
 name: DAST with OWASP ZAP
 
 on:
+  push:
+    branches: [main, sherwyn-securitytests]
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
