@@ -24,6 +24,7 @@ jobs:
         run: python3 -m pip install --upgrade semgrep
 
       - name: Run Semgrep scan
+        id: semgrep
         continue-on-error: true
         run: >-
           semgrep
@@ -76,3 +77,7 @@ jobs:
                 body: comment
               });
             }
+
+      - name: Fail build when Semgrep finds issues
+        if: steps.semgrep.outcome == 'failure'
+        run: exit 1
