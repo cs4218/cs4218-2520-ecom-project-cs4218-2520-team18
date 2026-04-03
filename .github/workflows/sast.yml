@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
 jobs:
   semgrep:
     name: Semgrep Security Scan
@@ -15,29 +20,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Install Semgrep
+        run: python3 -m pip install --upgrade semgrep
+
       - name: Run Semgrep scan
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/owasp-top-ten
-            p/cwe-top-25
-            p/nodejs
-            p/express
-          args: >-
-            --sarif
-            --output=semgrep.sarif
-            .
+        run: >-
+          semgrep
+          --config=p/security-audit
+          --config=p/owasp-top-ten
+          --config=p/cwe-top-25
+          --config=p/nodejs
+          --config=p/express
+          --sarif
+          --output=semgrep.sarif
+          .
 
       - name: Upload SARIF report to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
           category: semgrep
 
       - name: Comment PR with results
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('semgrep.sarif') != ''
         uses: actions/github-script@v7
         with:
           script: |
