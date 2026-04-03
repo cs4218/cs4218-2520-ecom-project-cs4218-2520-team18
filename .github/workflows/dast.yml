@@ -1,0 +1,127 @@
+name: DAST with OWASP ZAP
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: 'Run baseline scan (full) or incremental (faster)'
+        required: true
+        default: 'baseline'
+
+jobs:
+  dast:
+    name: OWASP ZAP Dynamic Security Scan
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:5
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env for testing
+        run: |
+          cat > .env << EOF
+          PORT=8080
+          DEV_MODE=false
+          MONGO_URL=mongodb://localhost:27017/test
+          JWT_SECRET=test_secret_key_for_dast_only_${{ github.run_id }}
+          BRAINTREE_KEY=test_key
+          BRAINTREE_MERCHANT_ID=test_merchant
+          EOF
+
+      - name: Start application
+        run: |
+          npm run server &
+          sleep 10
+          curl -f http://localhost:8080 || echo "App may not be ready, ZAP will detect"
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        if: github.event_name == 'schedule' || github.event.inputs.baseline == 'baseline'
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: >-
+            -a
+            -m 2
+            -d
+
+      - name: Run OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.7.0
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.baseline == 'full'
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: >-
+            -a
+            -m 2
+            -d
+            -J zap-report.json
+
+      - name: Upload ZAP results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: zap-scan-results
+          path: |
+            report_html.html
+            report_md.md
+            zap-report.json
+
+      - name: Comment PR with ZAP results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.existsSync('report_md.md') 
+              ? fs.readFileSync('report_md.md', 'utf8') 
+              : 'ZAP scan completed. Check artifacts for details.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔒 OWASP ZAP DAST Scan Results\n\n${summary}`
+            });
+
+      - name: Publish ZAP report to artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dast-report-html
+          path: report_html.html
+          retention-days: 30
+
+      - name: Fail if HIGH risk alerts found
+        if: always()
+        run: |
+          if [ -f "zap-report.json" ]; then
+            HIGH_ALERTS=$(jq '[.site[] | select(.alerts[]? | select(.riskcode == "3")) | .alerts[]] | length' zap-report.json)
+            if [ "$HIGH_ALERTS" -gt 0 ]; then
+              echo "❌ Found $HIGH_ALERTS HIGH severity vulnerabilities"
+              exit 1
+            fi
+          fi

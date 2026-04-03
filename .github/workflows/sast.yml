@@ -1,0 +1,68 @@
+name: SAST with Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  semgrep:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/cwe-top-25
+            p/nodejs
+            p/express
+          generateSarif: true
+
+      - name: Upload SARIF report to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const sarifData = JSON.parse(fs.readFileSync('semgrep.sarif', 'utf8'));
+            const results = sarifData.runs[0].results || [];
+
+            if (results.length === 0) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '✅ **Semgrep SAST scan passed!** No security issues found.'
+              });
+            } else {
+              let comment = '⚠️ **Semgrep SAST scan found issues:**\n\n';
+              results.forEach(result => {
+                const rule = result.ruleId || 'Unknown';
+                const message = result.message.text || 'No message';
+                const location = result.locations[0];
+                const file = location.physicalLocation.artifactLocation.uri;
+                const line = location.physicalLocation.region.startLine;
+                comment += `- **${rule}** at ${file}:${line}\n  ${message}\n\n`;
+              });
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
