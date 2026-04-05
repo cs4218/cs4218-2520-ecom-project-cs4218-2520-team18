@@ -17,7 +17,9 @@
     "test:e2e": "playwright test",
     "stress:seed": "node stress-tests/seedStressTestData.js",
     "stress:smoke": "k6 run stress-tests/smokeTest.js",
-    "stress:test": "k6 run stress-tests/searchProductStressTest.js"
+    "stress:test": "k6 run stress-tests/searchProductStressTest.js",
+    "stress:midrange": "k6 run stress-tests/midRangeStressTest.js",
+    "stress:local": "k6 run stress-tests/localStressTest.js"
   },
   "keywords": [],
   "author": "RP",
