@@ -4,14 +4,6 @@
  *
  * Generates a large dataset of products and categories for stress testing
  * the searchProductController and productFiltersController endpoints.
- *
- * Usage:
- *     node stress-tests/seedStressTestData.js
- *
- * Environment Variables:
- *     MONGO_URL - MongoDB connection string
- *     STRESS_TEST_PRODUCTS - Number of products to generate (default: 10000)
- *     STRESS_TEST_CATEGORIES - Number of categories to generate (default: 50)
  */
 
 import mongoose from "mongoose";

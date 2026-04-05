@@ -1,18 +1,15 @@
 // Aw Jean Leng Adrian, A0277537N
 /**
- * Stress Test Script for searchProductController and productFiltersController
+ * Mid-Range Stress Test - 100 VUs
  *
- * This k6 script tests the product search and filter endpoints under heavy load.
+ * A mid-range stress test between the local test (20 VUs) and the full
+ * stress test (500 VUs). Helps identify the performance degradation
+ * curve and pinpoint the breaking point.
  *
  * Load Profile:
- *     - Ramp up: 0 to 500 VUs over 2 minutes
- *     - Sustain: 500 VUs for 5 minutes
- *     - Ramp down: 500 to 0 VUs over 1 minute
- *
- * Thresholds:
- *     - p(95) response time < 2000ms
- *     - HTTP 500 error rate < 1%
- *     - Overall request failure rate < 5%
+ *     - Ramp up: 0 to 100 VUs over 1 minute
+ *     - Sustain: 100 VUs for 3 minutes
+ *     - Ramp down: 100 to 0 VUs over 30 seconds
  */
 
 import http from "k6/http";
@@ -31,9 +28,9 @@ const API_BASE = `${BASE_URL}/api/v1/product`;
 
 export const options = {
     stages: [
-        { duration: "2m", target: 500 },
-        { duration: "5m", target: 500 },
-        { duration: "1m", target: 0 },
+        { duration: "1m", target: 100 },
+        { duration: "3m", target: 100 },
+        { duration: "30s", target: 0 },
     ],
 
     thresholds: {
@@ -48,7 +45,6 @@ export const options = {
 
     summaryTrendStats: ["avg", "min", "med", "max", "p(90)", "p(95)", "p(99)"],
     discardResponseBodies: false,
-    httpDebug: "full",
 };
 
 const SEARCH_KEYWORDS = [
@@ -88,7 +84,7 @@ function randomSubset(arr, maxSize) {
 
 export function setup() {
     console.log(`\n${"=".repeat(60)}`);
-    console.log("Stress Test Setup");
+    console.log("Mid-Range Stress Test Setup (100 VUs)");
     console.log(`${"=".repeat(60)}`);
     console.log(`Base URL: ${BASE_URL}`);
     console.log(`API Base: ${API_BASE}`);
@@ -242,7 +238,7 @@ function filterProducts(checked, radio) {
 
 export function teardown(data) {
     console.log(`\n${"=".repeat(60)}`);
-    console.log("Stress Test Complete");
+    console.log("Mid-Range Stress Test Complete");
     console.log(`${"=".repeat(60)}`);
     console.log(`Total categories tested: ${data.categoryIds.length}`);
     console.log(`${"=".repeat(60)}\n`);
@@ -287,12 +283,12 @@ export function handleSummary(data) {
         status: thresholdsPassed ? "PASSED" : "FAILED",
         loadProfile: {
             stages: [
-                { duration: "2m", target: 500, description: "Ramp up to 500 VUs" },
-                { duration: "5m", target: 500, description: "Sustain 500 VUs" },
-                { duration: "1m", target: 0, description: "Ramp down to 0 VUs" },
+                { duration: "1m", target: 100, description: "Ramp up to 100 VUs" },
+                { duration: "3m", target: 100, description: "Sustain 100 VUs" },
+                { duration: "30s", target: 0, description: "Ramp down to 0 VUs" },
             ],
-            peakVUs: 500,
-            totalDuration: "8m",
+            peakVUs: 100,
+            totalDuration: "4m30s",
         },
         thresholds: data.thresholds,
         metrics: {
@@ -312,7 +308,7 @@ export function handleSummary(data) {
 
     return {
         "stdout": textSummary(data),
-        [`stress-tests/results/search-stress-${now}.json`]: JSON.stringify(summary, null, 4),
+        [`stress-tests/results/midrange-stress-${now}.json`]: JSON.stringify(summary, null, 4),
     };
 }
 
@@ -320,7 +316,7 @@ function textSummary(data) {
     const lines = [];
 
     lines.push("\n" + "=".repeat(70));
-    lines.push("STRESS TEST RESULTS SUMMARY");
+    lines.push("MID-RANGE STRESS TEST RESULTS SUMMARY (100 VUs)");
     lines.push("=".repeat(70));
 
     lines.push("\nTHRESHOLD RESULTS:");
