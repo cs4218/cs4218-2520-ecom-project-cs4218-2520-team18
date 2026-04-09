@@ -14,7 +14,10 @@
     "test:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js",
     "test:integration:frontend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.frontend.config.js --testPathPattern=integration\\.test\\.js --passWithNoTests",
     "test:integration:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js --testPathPattern=integration\\.test\\.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seed:load": "node scripts/load/seedLoadData.js",
+    "tokens:load": "node scripts/load/generateTokens.js",
+    "test:load": "node scripts/load/runJMeter.mjs expected-dau-5000 mixed-api"
   },
   "keywords": [],
   "author": "RP",
