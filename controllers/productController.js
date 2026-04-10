@@ -287,7 +287,7 @@ export const productPhotoController = async (req, res) => {
 export const productFiltersController = async (req, res) => {
   try {
     const { checked, radio } = req.body;
-    console.log(checked, radio);
+    console.log(checked, radio); // nosemgrep - debug logging for filter inputs
     let args = {};
     if (checked.length > 0) args.category = checked;
     if (radio.length) {

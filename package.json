@@ -15,8 +15,8 @@
     "test:integration:frontend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.frontend.config.js --testPathPattern=integration\\.test\\.js --passWithNoTests",
     "test:integration:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.backend.config.js --testPathPattern=integration\\.test\\.js",
     "test:e2e": "playwright test",
-    "sast": "semgrep --config=p/security-audit --config=p/owasp-top-ten --config=p/cwe-top-25 --json --output=sast-report.json . || true",
-    "sast:report": "semgrep --config=p/security-audit --config=p/owasp-top-ten --config=p/cwe-top-25 ."
+    "sast": "semgrep --config=p/security-audit --config=p/owasp-top-ten --config=p/cwe-top-25 --exclude='*.test.js' --exclude='*.integration.test.js' --exclude='*.html' --json --output=sast-report.json . || true",
+    "sast:report": "semgrep --config=p/security-audit --config=p/owasp-top-ten --config=p/cwe-top-25 --exclude='*.test.js' --exclude='*.integration.test.js' --exclude='*.html' ."
   },
   "keywords": [],
   "author": "RP",

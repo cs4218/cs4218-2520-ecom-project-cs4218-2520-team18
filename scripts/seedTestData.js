@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Load data from JSON files
 const loadJSONFile = (filename) => {
-  const filePath = path.join(__dirname, filename);
+  const filePath = path.join(__dirname, filename); // nosemgrep - filename is hardcoded, no user input
   const fileContent = fs.readFileSync(filePath, "utf8");
   return JSON.parse(fileContent);
 };

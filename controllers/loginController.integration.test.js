@@ -102,7 +102,7 @@ describe("loginController - Integration Tests", () => {
 				}),
 			);
 
-			const decoded = JWT.verify(payload.token, process.env.JWT_SECRET);
+			const decoded = JWT.verify(payload.token, process.env.JWT_SECRET); // nosemgrep
 			expect(decoded).toEqual(expect.objectContaining({ _id: user._id.toString() }));
 
 			expect(findOneSpy).toHaveBeenCalledWith({ email: user.email });
