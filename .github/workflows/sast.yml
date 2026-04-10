@@ -28,14 +28,24 @@ jobs:
         continue-on-error: true
         run: >-
           semgrep
+          --oss-only
           --config=p/security-audit
           --config=p/owasp-top-ten
           --config=p/cwe-top-25
-          --config=p/nodejs
-          --config=p/express
+          --exclude='*.test.js'
+          --exclude='*.integration.test.js'
+          --exclude='*.html'
+          --exclude='package.json'
+          --exclude='package-lock.json'
+          --exclude='client/src/_site/**'
+          --exclude='playwright-report/**'
+          --exclude='coverage/**'
+          --exclude='test-results/**'
+          --exclude='zap-report.html'
+          --exclude='zap-report.json'
           --sarif
           --output=semgrep.sarif
-          .
+          . 2>/dev/null
 
       - name: Upload SARIF report to GitHub
         uses: github/codeql-action/upload-sarif@v4

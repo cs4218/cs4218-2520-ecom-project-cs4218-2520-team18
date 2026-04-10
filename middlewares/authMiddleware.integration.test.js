@@ -1,6 +1,7 @@
 // Loh Ze Qing Norbert, A0277473R
 
 import JWT from 'jsonwebtoken';
+import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import userModel from '../models/userModel.js';
@@ -38,7 +39,7 @@ describe('authMiddleware - Integration Tests', () => {
     JWT.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'integration_auth_secret';
+    process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri(), {
       dbName: 'auth-middleware-integration-tests',
@@ -154,9 +155,10 @@ describe('authMiddleware - Integration Tests', () => {
     });
 
     test('requireSignIn returns 401 for token signed with wrong secret', async () => {
+      const wrongSecret = crypto.randomBytes(32).toString('hex');
       const wrongToken = JWT.sign(
         { _id: new mongoose.Types.ObjectId().toString() },
-        'wrong_secret',
+        wrongSecret,
         {
           expiresIn: '1h',
         },
