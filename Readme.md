@@ -209,6 +209,11 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/auth-user-journeys.spec.js (Complete authentication journeys: Register → Login → Update Profile → Logout → Protected Route → Re-login)
    - e2e/admin-dashboard-flows.spec.js (Admin dashboard flows)
 
+   Load/Stress Test Scripts:
+   - nfr/spike-testing/seed-loadtest-users.js
+   - nfr/spike-testing/step-stress-test.js
+   - nfr/spike-testing/teardown-loadtest-users.js
+
 2. Lim Kok Liang  
    Unit Tests:
    - controllers/categoryController.test.js
