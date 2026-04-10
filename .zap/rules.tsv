@@ -1,0 +1,5 @@
+# ZAP Baseline rules configuration
+# Format: <ruleId> <TAB> <ACTION> <TAB> <Reason>
+# ACTION values: IGNORE, INFO, WARN, FAIL
+
+10049	IGNORE	Accepted risk: public landing page is intentionally cacheable
