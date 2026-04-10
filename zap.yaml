@@ -3,7 +3,7 @@ env:
   - excludePaths: []
     name: baseline
     urls:
-    - http://localhost:6060
+    - http://host.docker.internal:6060
   parameters:
     failOnError: true
     progressToStdout: false
@@ -14,7 +14,7 @@ jobs:
   type: passiveScan-config
 - parameters:
     maxDuration: 1
-    url: http://localhost:6060
+    url: http://host.docker.internal:6060
   type: spider
 - parameters:
     maxDuration: 0
@@ -22,19 +22,22 @@ jobs:
 - parameters:
     format: Long
     summaryFile: /home/zap/zap_out.json
-  rules: []
+  rules:
+  - action: IGNORE
+    customMessage: ''
+    id: 10049
   type: outputSummary
 - parameters:
     reportDescription: ''
     reportDir: /zap/wrk/
-    reportFile: /zap/wrk/dast-baseline-report.html
+    reportFile: zap-report.html
     reportTitle: ZAP Scanning Report
     template: traditional-html
   type: report
 - parameters:
     reportDescription: ''
     reportDir: /zap/wrk/
-    reportFile: /zap/wrk/dast-baseline-report.json
+    reportFile: zap-report.json
     reportTitle: ZAP Scanning Report
     template: traditional-json
   type: report

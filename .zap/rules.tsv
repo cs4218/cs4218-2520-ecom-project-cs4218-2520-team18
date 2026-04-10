@@ -1,53 +1,5 @@
-# OWASP ZAP Rules Configuration
-# This file controls which security checks ZAP runs
-# Format: RuleID [ENABLED|DISABLED]
+# ZAP Baseline rules configuration
+# Format: <ruleId> <TAB> <ACTION> <TAB> <Reason>
+# ACTION values: IGNORE, INFO, WARN, FAIL
 
-# OWASP Top 10 & CWE Coverage
-10000	ENABLED	# Directory Browsing
-10001	ENABLED	# Weak Authentication
-10002	ENABLED	# Cross Site Scripting (XSS) - Reflected
-10003	ENABLED	# Cross Site Scripting (XSS) - Stored
-10010	ENABLED	# Buffer Overflow
-10011	ENABLED	# Cookie Security
-10015	ENABLED	# Re-DoS
-10016	ENABLED	# XML External Entity (XXE)
-10017	ENABLED	# Cross Site Request Forgery (CSRF)
-10019	ENABLED	# Server Side Include (SSI)
-10020	ENABLED	# Remote OS Command Injection
-10021	ENABLED	# SQL Injection
-10025	ENABLED	# Insecure Direct Object Reference (IDOR)
-10026	ENABLED	# Information Disclosure
-10027	ENABLED	# LDAP Injection
-10029	ENABLED	# Trojan Source
-10030	ENABLED	# Missing Security Header
-10031	ENABLED	# Insufficient Authentication
-10032	ENABLED	# Insufficient Authorization
-10033	ENABLED	# Insufficient Logging
-10034	ENABLED	# Insecure Configuration
-10035	ENABLED	# Broken Cryptography
-10036	ENABLED	# Injection
-10037	ENABLED	# Data Exposure
-10038	ENABLED	# Weak MFA
-10039	ENABLED	# Insecure Dependency
-
-# Authentication & Session Management
-20000	ENABLED	# Authentication Bypass
-20001	ENABLED	# Session Fixation
-20002	ENABLED	# Session Timeout
-20003	ENABLED	# Cross-Domain Authentication
-
-# Input Validation
-30000	ENABLED	# Input Validation
-30001	ENABLED	# Path Traversal
-30002	ENABLED	# Null Byte Injection
-
-# Sensitive Information Disclosure
-40000	ENABLED	# Information Disclosure
-40001	ENABLED	# Source Code Disclosure
-40002	ENABLED	# Configuration Disclosure
-40003	ENABLED	# Comment Disclosure
-
-# Denial of Service
-50000	ENABLED	# Denial of Service
-50001	ENABLED	# CMS Detection
-50002	ENABLED	# Service Enumeration
+10049	IGNORE	Accepted risk: public landing page is intentionally cacheable

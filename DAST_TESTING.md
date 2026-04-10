@@ -182,10 +182,10 @@ Test DAST locally first:
 npm run server
 
 # Terminal 2: Run ZAP (requires zaproxy brew installed)
-zaproxy -cmd -quickurl http://localhost:8080 -quickout dast-report.html
+zaproxy -cmd -quickurl http://localhost:8080 -quickout zap-report.html
 
 # Open report
-open dast-report.html
+open zap-report.html
 ```
 
 ## Monitoring & Documentation
@@ -202,5 +202,3 @@ Save reports in artifacts for:
 - [ZAP GitHub Action](https://github.com/zaproxy/action-baseline)
 - [OWASP Top 10](https://owasp.org/Top10/)
 - [CWE/SANS Top 25](https://cwe.mitre.org/top25/)
-
-Ready to enable DAST? Just push your code!
