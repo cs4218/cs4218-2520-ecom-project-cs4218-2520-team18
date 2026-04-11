@@ -1,14 +1,26 @@
 // Volume Testing (Flood Testing) — k6 Test Script
 //
 // Tests system performance and stability under a large and growing volume of data.
-// Identifies thresholds at which the system degrades or becomes unstable, and how
-// increasing data-insertion frequency affects those thresholds.
+// Incrementally increases both the data-insertion rate (Thread Group 1) and the
+// concurrent-user load (Thread Group 2) in discrete steps to determine the threshold
+// at which the system becomes unstable or crashes, and how changes in data-insertion
+// frequency affect that threshold.
 //
 // Two parallel scenarios:
 //   Thread Group 1 — data_loader   : Admin continuously creates new products via API,
 //                                     simulating MongoDB data growth over time.
+//                                     VU count steps up each stage so inserts become
+//                                     progressively more aggressive.
 //   Thread Group 2 — user_actions  : Regular users browse, search, and filter products
 //                                     while the database volume is growing.
+//                                     VU count steps up in parallel with the data loader
+//                                     to find the combined breaking point.
+//
+// Step strategy:
+//   Each stage ramps quickly to its target VU count, then holds for a sustained
+//   observation window before climbing to the next step. The test keeps escalating
+//   until thresholds are breached — that is when the system is considered unstable.
+//   No ramp-down steps are included so degradation accumulates naturally.
 //
 // Pre-requisites:
 //   1. Run seed-volume-data.js to pre-populate the database with a large baseline dataset.
@@ -67,31 +79,64 @@ const productsInserted = new Counter("products_inserted");
 const userActionErrors = new Rate("user_action_errors");
 
 // ---------------------------------------------------------------------------
-// Load Profile
+// Load Profile — Incremental Step-Ladder
 //
-// The test is divided into phases:
-//   Phase 1 (warm-up)    : small user load, data loader starts slowly
-//   Phase 2 (ramp-up)    : user load grows, data loader accelerates
-//   Phase 3 (sustained)  : maximum load held steady — measures stability
-//   Phase 4 (ramp-down)  : both scenarios wind down
+// Both scenarios share the same step structure: ramp quickly to a target VU
+// count, hold for a sustained observation window, then step up to the next
+// level.  No ramp-down steps are included — degradation accumulates naturally
+// so the test can identify the exact step at which the system becomes unstable.
+//
+// Data loader steps (products inserted per minute grows with each step):
+//   Step 1 — baseline    :  2 VUs  │ Step 4 — heavy    : 20 VUs
+//   Step 2 — light       :  5 VUs  │ Step 5 — very heavy: 40 VUs
+//   Step 3 — moderate    : 10 VUs  │
+//
+// User action steps (concurrent shoppers grow with each step):
+//   Step 1 — baseline    :  50 VUs │ Step 4 — heavy    : 400 VUs
+//   Step 2 — light       : 100 VUs │ Step 5 — very heavy: 800 VUs
+//   Step 3 — moderate    : 200 VUs │
+//
+// Each step ramps in 30 s then holds for 2 min before the next escalation.
 // ---------------------------------------------------------------------------
 
 // Data loader: fewer VUs (simulates background DB writes)
+// Each step doubles the insertion rate
 const DATA_LOADER_STAGES = [
-  { duration: "1m", target: 2 },   // Warm-up: trickle of inserts
-  { duration: "2m", target: 10 },  // Ramp-up: moderate insertion rate
-  { duration: "5m", target: 20 },  // Sustained: high insertion rate
-  { duration: "1m", target: 5 },   // Ramp-down
-  { duration: "30s", target: 0 },
+  // Step 1 — baseline insert rate
+  { duration: "30s", target: 2 },
+  { duration: "2m", target: 2 },
+  // Step 2 — light insert rate
+  { duration: "30s", target: 5 },
+  { duration: "2m", target: 5 },
+  // Step 3 — moderate insert rate
+  { duration: "30s", target: 10 },
+  { duration: "2m", target: 10 },
+  // Step 4 — heavy insert rate
+  { duration: "30s", target: 20 },
+  { duration: "2m", target: 20 },
+  // Step 5 — very heavy insert rate (expected to reveal degradation)
+  { duration: "30s", target: 40 },
+  { duration: "2m", target: 40 },
 ];
 
 // User actions: more VUs (simulates concurrent shoppers under growing data)
+// Each step doubles the concurrent user count
 const USER_ACTION_STAGES = [
-  { duration: "1m", target: 50 },   // Warm-up
-  { duration: "2m", target: 200 },  // Ramp-up
-  { duration: "5m", target: 200 },  // Sustained
-  { duration: "1m", target: 50 },   // Ramp-down
-  { duration: "30s", target: 0 },
+  // Step 1 — baseline concurrency
+  { duration: "30s", target: 50 },
+  { duration: "2m", target: 50 },
+  // Step 2 — light concurrency
+  { duration: "30s", target: 100 },
+  { duration: "2m", target: 100 },
+  // Step 3 — moderate concurrency
+  { duration: "30s", target: 200 },
+  { duration: "2m", target: 200 },
+  // Step 4 — heavy concurrency
+  { duration: "30s", target: 400 },
+  { duration: "2m", target: 400 },
+  // Step 5 — very heavy concurrency (expected to reveal degradation / crash)
+  { duration: "30s", target: 800 },
+  { duration: "2m", target: 800 },
 ];
 
 export const options = {
