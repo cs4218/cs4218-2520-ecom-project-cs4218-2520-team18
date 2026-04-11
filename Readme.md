@@ -317,6 +317,13 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/orders-flows.spec.js
    - e2e/search-flows.spec.js
 
+   NFR Tests:
+   - nfr/stress-tests/localStressTest.js
+   - nfr/stress-tests/midRangeStressTest.js
+   - nfr/stress-tests/searchProductStressTest.js
+   - nfr/stress-tests/seedStressTestData.js
+   - nfr/stress-tests/smokeTest.js
+
 ## 7. AI Declaration
 
 AI tools such as Copilot and Gemini were used throughout the milestone.  
