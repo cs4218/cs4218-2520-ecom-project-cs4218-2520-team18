@@ -10,6 +10,10 @@ coverage/
 
 # local tooling artifacts
 .scannerwork/
+sast-report.json
+sast-report.sarif
+zap-report.html
+zap-report.json
 
 # editor settings
 .vscode/
