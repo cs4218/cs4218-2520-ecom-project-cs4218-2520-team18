@@ -1,0 +1,69 @@
+{
+    "timestamp": "2026-04-05T10:23:15.377Z",
+    "status": "PASSED",
+    "loadProfile": {
+        "vus": 10,
+        "duration": "1m",
+        "peakVUs": 10,
+        "totalDuration": "1m"
+    },
+    "metrics": {
+        "vus": {
+            "min": 10,
+            "max": 10,
+            "value": 10
+        },
+        "vus_max": {
+            "value": 10,
+            "min": 10,
+            "max": 10
+        },
+        "iterations": {
+            "count": 736,
+            "rate": 12.11961048434767
+        },
+        "http_reqs": {
+            "count": 1474,
+            "rate": 24.272154692837585
+        },
+        "http_req_duration": {
+            "min": 5.3512,
+            "med": 76.81479999999999,
+            "max": 981.3853,
+            "p(90)": 299.70061000000004,
+            "p(95)": 410.50651999999997,
+            "avg": 125.45519871099057
+        },
+        "http_req_failed": {
+            "rate": 0,
+            "passes": 0,
+            "fails": 1474
+        },
+        "search_latency": {
+            "min": 43.319,
+            "med": 129.6549,
+            "max": 981.3853,
+            "p(90)": 404.0826,
+            "p(95)": 469.93745,
+            "avg": 184.79492133152172
+        },
+        "filter_latency": {
+            "max": 504.8813,
+            "p(90)": 149.6334,
+            "p(95)": 180.83455,
+            "avg": 66.43606019021738,
+            "min": 15.1944,
+            "med": 44.754900000000006
+        },
+        "search_errors": {
+            "rate": 0,
+            "passes": 0,
+            "fails": 736
+        },
+        "filter_errors": {
+            "rate": 0,
+            "passes": 0,
+            "fails": 736
+        }
+    }
+}

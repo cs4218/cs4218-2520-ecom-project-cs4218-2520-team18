@@ -1,0 +1,84 @@
+{
+    "timestamp": "2026-04-05T10:26:20.915Z",
+    "status": "PASSED",
+    "loadProfile": {
+        "stages": [
+            {
+                "duration": "30s",
+                "target": 20,
+                "description": "Ramp up to 20 VUs"
+            },
+            {
+                "duration": "2m",
+                "target": 20,
+                "description": "Sustain 20 VUs"
+            },
+            {
+                "duration": "30s",
+                "target": 0,
+                "description": "Ramp down to 0 VUs"
+            }
+        ],
+        "peakVUs": 20,
+        "totalDuration": "3m"
+    },
+    "metrics": {
+        "vus": {
+            "min": 1,
+            "max": 20,
+            "value": 1
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "iterations": {
+            "count": 4509,
+            "rate": 25.038349642001382
+        },
+        "http_reqs": {
+            "count": 4510,
+            "rate": 25.043902613756096
+        },
+        "http_req_duration": {
+            "p(95)": 348.5194950000003,
+            "avg": 119.75742261640812,
+            "min": 5.2544,
+            "med": 78.95644999999999,
+            "max": 1085.3057,
+            "p(90)": 254.6942
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 4510,
+            "rate": 0
+        },
+        "search_latency": {
+            "p(90)": 324.17428,
+            "p(95)": 424.547955,
+            "avg": 158.08163402474523,
+            "min": 39.5957,
+            "med": 119.23689999999999,
+            "max": 1085.3057
+        },
+        "filter_latency": {
+            "avg": 60.015307552526885,
+            "min": 5.2544,
+            "med": 36.6586,
+            "max": 363.6003,
+            "p(90)": 142.2909,
+            "p(95)": 176.2212
+        },
+        "search_errors": {
+            "passes": 0,
+            "fails": 2748,
+            "rate": 0
+        },
+        "filter_errors": {
+            "passes": 0,
+            "fails": 1761,
+            "rate": 0
+        }
+    }
+}
