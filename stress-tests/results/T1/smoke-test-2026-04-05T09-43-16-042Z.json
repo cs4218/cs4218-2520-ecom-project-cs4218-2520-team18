@@ -1,0 +1,23 @@
+{
+    "timestamp": "2026-04-05T09:43:16.042Z",
+    "status": "PASSED",
+    "metrics": {
+        "http_reqs": {
+            "count": 1476,
+            "rate": 24.31673251860791
+        },
+        "http_req_duration": {
+            "p(90)": 283.1731,
+            "p(95)": 406.94015,
+            "avg": 122.5422016937671,
+            "min": 4.086,
+            "med": 72.47444999999999,
+            "max": 882.1
+        },
+        "http_req_failed": {
+            "fails": 1476,
+            "rate": 0,
+            "passes": 0
+        }
+    }
+}

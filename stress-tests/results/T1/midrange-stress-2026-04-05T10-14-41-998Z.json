@@ -1,0 +1,92 @@
+{
+    "timestamp": "2026-04-05T10:14:41.998Z",
+    "status": "FAILED",
+    "loadProfile": {
+        "stages": [
+            {
+                "duration": "1m",
+                "target": 100,
+                "description": "Ramp up to 100 VUs"
+            },
+            {
+                "duration": "3m",
+                "target": 100,
+                "description": "Sustain 100 VUs"
+            },
+            {
+                "duration": "30s",
+                "target": 0,
+                "description": "Ramp down to 0 VUs"
+            }
+        ],
+        "peakVUs": 100,
+        "totalDuration": "4m30s"
+    },
+    "metrics": {
+        "vus": {
+            "value": 2,
+            "min": 2,
+            "max": 100
+        },
+        "vus_max": {
+            "value": 100,
+            "min": 100,
+            "max": 100
+        },
+        "iterations": {
+            "count": 5907,
+            "rate": 21.865490473504526
+        },
+        "http_reqs": {
+            "count": 5909,
+            "rate": 21.872893720659935
+        },
+        "http_req_duration": {
+            "max": 30001.3349,
+            "p(90)": 7658.409699999991,
+            "p(95)": 11173.99936,
+            "p(99)": 14362.440116000005,
+            "avg": 3503.5238396683185,
+            "min": 12.0989,
+            "med": 2607.0809
+        },
+        "http_req_failed": {
+            "rate": 0.004061600947706888,
+            "passes": 24,
+            "fails": 5885
+        },
+        "search_latency": {
+            "med": 2595,
+            "max": 17832,
+            "p(90)": 5596.599999999998,
+            "p(95)": 10688.599999999997,
+            "p(99)": 12083.039999999999,
+            "avg": 3224.304274584123,
+            "min": 38
+        },
+        "filter_latency": {
+            "p(99)": 30000,
+            "avg": 4654.874784110535,
+            "min": 16,
+            "med": 2707,
+            "max": 30002,
+            "p(90)": 12281.499999999996,
+            "p(95)": 14263.599999999999
+        },
+        "search_errors": {
+            "rate": 0.7567909033480733,
+            "passes": 3594,
+            "fails": 1155
+        },
+        "filter_errors": {
+            "rate": 0.7236614853195165,
+            "passes": 838,
+            "fails": 320
+        },
+        "http_500_rate": {
+            "passes": 0,
+            "fails": 5907,
+            "rate": 0
+        }
+    }
+}

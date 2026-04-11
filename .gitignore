@@ -18,3 +18,7 @@ zap-report.json
 # editor settings
 .vscode/
 .idea/
+
+# stress test results (keep directory, ignore outputs)
+stress-tests/results/*.json
+stress-tests/results/*.txt
