@@ -308,6 +308,9 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/browsing-flows.spec.js
    - e2e/cart-flows.spec.js
 
+   NFR Tests:
+   - nfr/volume-testing/*
+
 6. Aw Jean Leng Adrian  
    Unit Tests:
    - controllers/categoryController.test.js
