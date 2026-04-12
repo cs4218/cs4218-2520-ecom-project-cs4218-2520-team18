@@ -349,3 +349,8 @@ Use of AI included:
 ## MS1 CI URL
 
 - [MS1 CI URL](https://github.com/cs4218/cs4218-2520-ecom-project-cs4218-2520-team18/actions/runs/22281766846/job/64453440650)
+
+## MS3 AI Testing Repo
+
+- [AI Testing Repo](https://github.com/cs4218-team18/cs4218-2520-ecom-project-cs4218-2520-team18)
+- CodeRabbit Integration - Free on a public repo, configured in `.coderabbit.yaml`, with a focus on testing-related files and directories.
