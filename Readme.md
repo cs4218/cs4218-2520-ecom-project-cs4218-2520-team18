@@ -240,6 +240,9 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/admin-orders.spec.js (Admin order management flows)
    - e2e/admin-users.spec.js (Admin user management flows)
 
+   Load Testing:
+   - tests/load (load testing directory - JMeter test plans and related scripts)
+
 4. Sherwyn Ng Cheng Xin  
    Unit Tests:
    - client/src/pages/Contact.test.js
