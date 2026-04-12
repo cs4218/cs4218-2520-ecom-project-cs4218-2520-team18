@@ -213,8 +213,11 @@ To begin unit testing with Jest in your project, follow these steps:
    - nfr/spike-testing/seed-loadtest-users.js
    - nfr/spike-testing/step-stress-test.js
    - nfr/spike-testing/teardown-loadtest-users.js
+  
+   AI Testing
+   - .coderabbit.yaml
 
-2. Lim Kok Liang  
+3. Lim Kok Liang  
    Unit Tests:
    - controllers/categoryController.test.js
    - controllers/productController.test.js
@@ -237,7 +240,7 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/admin-orders.spec.js (Admin order management flows)
    - e2e/admin-users.spec.js (Admin user management flows)
 
-3. Sherwyn Ng Cheng Xin  
+4. Sherwyn Ng Cheng Xin  
    Unit Tests:
    - client/src/pages/Contact.test.js
    - client/src/pages/Policy.test.js
@@ -274,7 +277,7 @@ To begin unit testing with Jest in your project, follow these steps:
    - .github/workflows/dast.yml
    - .github/workflows/sast.yml
 
-4. Billy Ho Cheng En  
+5. Billy Ho Cheng En  
    Unit Tests:
    - client/src/pages/ProductDetails.test.js
    - client/src/pages/categoryProduct.test.js
@@ -302,7 +305,7 @@ To begin unit testing with Jest in your project, follow these steps:
    - e2e/browsing-flows.spec.js
    - e2e/cart-flows.spec.js
 
-5. Aw Jean Leng Adrian  
+6. Aw Jean Leng Adrian  
    Unit Tests:
    - controllers/categoryController.test.js
    - controllers/orderController.test.js
