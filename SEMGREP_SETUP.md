@@ -1,27 +1,34 @@
+Sherwyn Ng, A0255132N
+
 # Semgrep SAST Setup Guide
 
 ## What is Semgrep?
+
 Semgrep is a static analysis security testing (SAST) tool that scans your code for security vulnerabilities, bugs, and code quality issues without running the code.
 
 ## Installation
 
 ### Option 1: Docker (Recommended - No Install Required)
+
 ```bash
 # Run Semgrep in Docker
 docker run -v /path/to/your/repo:/src returntocorp/semgrep semgrep --config=.semgrep.yml /src
 ```
 
 ### Option 2: Direct Install (macOS with Homebrew)
+
 ```bash
 brew install semgrep
 ```
 
 ### Option 3: Using pip
+
 ```bash
 pip install semgrep
 ```
 
 ### Option 4: Using npm (Node.js)
+
 ```bash
 npm install -g semgrep
 ```
@@ -55,6 +62,7 @@ The `.semgrep.yml` configuration includes rules for:
 ## Understanding Output
 
 Example output:
+
 ```
 controllers/userController.js
   Line 45: console.log("User password:", password)
@@ -64,6 +72,7 @@ controllers/userController.js
 ```
 
 ### Severity Levels:
+
 - **HIGH**: Security vulnerability - fix immediately
 - **MEDIUM**: Code quality/security concern - should fix
 - **LOW**: Best practice suggestion
@@ -71,6 +80,7 @@ controllers/userController.js
 ## CI/CD Integration
 
 Add to your GitHub Actions (`.github/workflows/sast.yml`):
+
 ```yaml
 name: SAST with Semgrep
 
@@ -93,6 +103,7 @@ jobs:
 ## Customizing Rules
 
 Edit `.semgrep.yml` to:
+
 - Add more rules from [Semgrep Registry](https://semgrep.dev/r)
 - Exclude specific files: `--exclude-dir=node_modules`
 - Run specific rules only: `semgrep -r hardcoded-secrets .`

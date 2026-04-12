@@ -32,13 +32,13 @@ jobs:
 
       - name: Run Jest tests for frontend
         run: npm run test:frontend
-        
+
       - name: Run Jest tests for backend
         run: npm run test:backend
-        env: 
-          BRAINTREE_MERCHANT_ID: "dummy_merchant"
-          BRAINTREE_PUBLIC_KEY: "dummy_public"
-          BRAINTREE_PRIVATE_KEY: "dummy_private"
+        env:
+          BRAINTREE_MERCHANT_ID: 'dummy_merchant'
+          BRAINTREE_PUBLIC_KEY: 'dummy_public'
+          BRAINTREE_PRIVATE_KEY: 'dummy_private'
 
       - name: Run integration tests for frontend
         run: npm run test:integration:frontend -- --coverage=false
@@ -46,9 +46,9 @@ jobs:
       - name: Run integration tests for backend
         run: npm run test:integration:backend -- --coverage=false
         env:
-          BRAINTREE_MERCHANT_ID: "dummy_merchant"
-          BRAINTREE_PUBLIC_KEY: "dummy_public"
-          BRAINTREE_PRIVATE_KEY: "dummy_private"
+          BRAINTREE_MERCHANT_ID: 'dummy_merchant'
+          BRAINTREE_PUBLIC_KEY: 'dummy_public'
+          BRAINTREE_PRIVATE_KEY: 'dummy_private'
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps

@@ -1,3 +1,5 @@
+Sherwyn Ng, A0255132N
+
 # CI/CD Security Testing Integration
 
 ## Overview
