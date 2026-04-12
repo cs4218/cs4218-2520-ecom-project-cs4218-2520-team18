@@ -1,0 +1,50 @@
+      ✓ db_monitor: status 200
+      ✓ user_actions login: status 200
+      ✓ data_loader login: status 200
+      ✓ data_loader login: has token
+      ✓ data_loader get-category: status 200
+      ✗ data_loader create product: status 201
+       ↳  95% — ✓ 937 / ✗ 41
+      ✓ user_actions get-category: status 200
+      ✓ user_actions product-list: status 200
+      ✓ user_actions product-count: status 200
+      ✓ user_actions pagination: status 200
+      ✗ user_actions search: status 200
+       ↳  87% — ✓ 2585 / ✗ 355
+      ✗ user_actions product-filters: status 200
+       ↳  94% — ✓ 2752 / ✗ 169
+      ✗ user_actions single-product: status 200
+       ↳  94% — ✓ 2579 / ✗ 145
+      ✗ user_actions orders: status 200
+       ↳  92% — ✓ 2558 / ✗ 215
+
+    ✗ category_list_duration................: avg=5.48s    min=9.46ms   med=797.58ms max=47.48s   p(25)=203.72ms p(75)=2.2s   p(95)=31.68s   p(99)=41.15s  
+      checks................................: 96.60% ✓ 26311     ✗ 925    
+    ✓ data_loader_errors....................: 2.03%  ✓ 41        ✗ 1974   
+      data_loader_product_create_duration...: avg=5.32s    min=20.98ms  med=1.57s    max=1m0s     p(25)=311.64ms p(75)=3.31s  p(95)=55.01s   p(99)=1m0s    
+      data_received.........................: 10 GB  13 MB/s
+      data_sent.............................: 9.3 MB 12 kB/s
+      db_document_count.....................: 10957  min=10000   max=10957
+    ✗ filter_duration.......................: avg=7.43s    min=18.87ms  med=1.09s    max=1m0s     p(25)=289.69ms p(75)=3.64s  p(95)=59.98s   p(99)=1m0s    
+      http_req_blocked......................: avg=241.61µs min=0s       med=4µs      max=126.39ms p(25)=2µs      p(75)=6µs    p(95)=252.24µs p(99)=3.8ms   
+      http_req_connecting...................: avg=228.71µs min=0s       med=0s       max=126.31ms p(25)=0s       p(75)=0s     p(95)=202.24µs p(99)=2.74ms  
+    ✗ http_req_duration.....................: avg=7.18s    min=9.39ms   med=1.1s     max=1m0s     p(25)=303.97ms p(75)=3.93s  p(95)=41.11s   p(99)=1m0s    
+        { expected_response:true }..........: avg=5.33s    min=9.39ms   med=1.04s    max=59.76s   p(25)=283.95ms p(75)=3.07s  p(95)=35.55s   p(99)=42.71s  
+    ✓ http_req_failed.......................: 3.40%  ✓ 925       ✗ 26271  
+      http_req_receiving....................: avg=13.82ms  min=0s       med=37µs     max=3.58s    p(25)=21µs     p(75)=78µs   p(95)=6.16ms   p(99)=206.77ms
+      http_req_sending......................: avg=23.45µs  min=2µs      med=12µs     max=9.57ms   p(25)=8µs      p(75)=19µs   p(95)=59µs     p(99)=168µs   
+      http_req_tls_handshaking..............: avg=0s       min=0s       med=0s       max=0s       p(25)=0s       p(75)=0s     p(95)=0s       p(99)=0s      
+      http_req_waiting......................: avg=7.17s    min=9.35ms   med=1.1s     max=1m0s     p(25)=303.89ms p(75)=3.93s  p(95)=41.07s   p(99)=1m0s    
+      http_reqs.............................: 27196  34.862314/s
+      iteration_duration....................: avg=37.95s   min=1.12s    med=20.25s   max=4m20s    p(25)=12.72s   p(75)=36.27s p(95)=3m20s    p(99)=3m54s   
+      iterations............................: 3772   4.835294/s
+    ✗ list_products_duration................: avg=5.93s    min=15.18ms  med=856.06ms max=41.69s   p(25)=236.71ms p(75)=2.27s  p(95)=40.73s   p(99)=41.24s  
+      login_duration........................: avg=16.78s   min=54.61ms  med=14.35s   max=40.43s   p(25)=1.07s    p(75)=32.25s p(95)=37.7s    p(99)=39.49s  
+      orders_duration.......................: avg=6.65s    min=24.6ms   med=1.42s    max=1m0s     p(25)=342.86ms p(75)=3.52s  p(95)=59.99s   p(99)=1m0s    
+    ✗ pagination_duration...................: avg=2.11s    min=22.17ms  med=781.56ms max=41.73s   p(25)=162.1ms  p(75)=1.52s  p(95)=4.56s    p(99)=30.34s  
+      products_inserted.....................: 937    1.201132/s
+    ✗ search_duration.......................: avg=18.69s   min=462.66ms med=12.86s   max=1m0s     p(25)=4.17s    p(75)=30.04s p(95)=1m0s     p(99)=1m0s    
+    ✗ single_product_duration...............: avg=5.43s    min=20.32ms  med=1.31s    max=1m0s     p(25)=314.23ms p(75)=2.45s  p(95)=1m0s     p(99)=1m0s    
+    ✓ user_action_errors....................: 4.04%  ✓ 884       ✗ 20976  
+      vus...................................: 718    min=4       max=841  
+      vus_max...............................: 841    min=841     max=841  
