@@ -1,3 +1,4 @@
+// Billy Ho Cheng En, A0252588R
 // Volume Testing (Flood Testing) — k6 Test Script
 //
 // Tests system performance and stability under a large and growing volume of data.
@@ -36,7 +37,7 @@
 
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { Counter, Rate, Trend } from "k6/metrics";
+import { Counter, Rate, Trend, Gauge } from "k6/metrics";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.1.0/index.js";
 
 // ---------------------------------------------------------------------------
@@ -74,6 +75,7 @@ const loginDuration = new Trend("login_duration", true);
 const dataLoaderDuration = new Trend("data_loader_product_create_duration", true);
 const dataLoaderErrors = new Rate("data_loader_errors");
 const productsInserted = new Counter("products_inserted");
+
 
 // Overall error rates per scenario
 const userActionErrors = new Rate("user_action_errors");
@@ -206,17 +208,10 @@ function jsonHeaders(token) {
 }
 
 // Search keywords sampled during user actions
+// Only use keywords that match the seeded products: "VolumeTest Product XXXXXX"
 const SEARCH_KEYWORDS = [
   "volumetest",
   "product",
-  "laptop",
-  "phone",
-  "book",
-  "shirt",
-  "keyboard",
-  "camera",
-  "monitor",
-  "headphones",
 ];
 
 // Pre-built test-user list — matches seed-volume-data.js (same pattern as spike-testing)
@@ -236,29 +231,35 @@ for (let i = 0; i < VT_USER_COUNT; i++) {
 // This simulates MongoDB data growth over the course of the test.
 // ---------------------------------------------------------------------------
 
+// VU-level token cache for data loader (persists across iterations)
+let adminTokenCache = null;
+
 export function dataLoader() {
-  // --- Admin login (once per VU iteration set-up) ---
-  const loginRes = http.post(
-    `${API_AUTH}/login`,
-    JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-    jsonHeaders()
-  );
+  // --- Admin login (once per VU, cached across iterations) ---
+  if (!adminTokenCache) {
+    const loginRes = http.post(
+      `${API_AUTH}/login`,
+      JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+      jsonHeaders()
+    );
 
-  const loginOk = check(loginRes, {
-    "data_loader login: status 200": (r) => r.status === 200,
-    "data_loader login: has token": (r) => {
-      try { return !!JSON.parse(r.body).token; } catch (_) { return false; }
-    },
-  });
+    const loginOk = check(loginRes, {
+      "data_loader login: status 200": (r) => r.status === 200,
+      "data_loader login: has token": (r) => {
+        try { return !!JSON.parse(r.body).token; } catch (_) { return false; }
+      },
+    });
 
-  dataLoaderErrors.add(!loginOk);
-  if (!loginOk) {
-    sleep(2);
-    return;
+    dataLoaderErrors.add(!loginOk);
+    if (!loginOk) {
+      sleep(2);
+      return;
+    }
+
+    try { adminTokenCache = JSON.parse(loginRes.body).token || ""; } catch (_) { }
   }
 
-  let adminToken = "";
-  try { adminToken = JSON.parse(loginRes.body).token || ""; } catch (_) {}
+  const adminToken = adminTokenCache;
 
   // --- Fetch a category ID to attach to the product ---
   const catRes = http.get(`${API_CATEGORY}/get-category`, jsonHeaders(adminToken));
@@ -273,7 +274,7 @@ export function dataLoader() {
     if (categories.length > 0) {
       categoryId = randomItem(categories)._id;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   if (!categoryId) {
     sleep(1);
@@ -323,26 +324,32 @@ export function dataLoader() {
 //   list, paginate, search, filter, single product, orders.
 // ---------------------------------------------------------------------------
 
+// VU-level token cache for user actions (persists across iterations)
+let userTokenCache = null;
+
 export function userActions() {
-  // --- Login as a volume-test user ---
-  // Use __VU (virtual user ID) to deterministically distribute users across VUs,
-  // avoiding random selection of authentication credentials (CodeQL js/insecure-randomness)
-  const user = VT_TEST_USERS[(__VU - 1) % VT_USER_COUNT];
+  // --- Login as a volume-test user (once per VU, cached across iterations) ---
+  if (!userTokenCache) {
+    // Use __VU (virtual user ID) to deterministically distribute users across VUs,
+    // avoiding random selection of authentication credentials (CodeQL js/insecure-randomness)
+    const user = VT_TEST_USERS[(__VU - 1) % VT_USER_COUNT];
 
-  const loginRes = http.post(
-    `${API_AUTH}/login`,
-    JSON.stringify({ email: user.email, password: user.password }),
-    jsonHeaders()
-  );
+    const loginRes = http.post(
+      `${API_AUTH}/login`,
+      JSON.stringify({ email: user.email, password: user.password }),
+      jsonHeaders()
+    );
 
-  const loginOk = check(loginRes, {
-    "user_actions login: status 200": (r) => r.status === 200,
-  });
-  loginDuration.add(loginRes.timings.duration);
-  userActionErrors.add(!loginOk);
+    const loginOk = check(loginRes, {
+      "user_actions login: status 200": (r) => r.status === 200,
+    });
+    loginDuration.add(loginRes.timings.duration);
+    userActionErrors.add(!loginOk);
 
-  let token = "";
-  try { token = JSON.parse(loginRes.body).token || ""; } catch (_) {}
+    try { userTokenCache = JSON.parse(loginRes.body).token || ""; } catch (_) { }
+  }
+
+  const token = userTokenCache;
 
   randomSleep(1, 2);
 
@@ -358,7 +365,7 @@ export function userActions() {
   try {
     const cats = JSON.parse(catRes.body).category || [];
     if (cats.length > 0) categoryId = randomItem(cats)._id;
-  } catch (_) {}
+  } catch (_) { }
 
   randomSleep(1, 2);
 
@@ -377,12 +384,12 @@ export function userActions() {
   check(countRes, { "user_actions product-count: status 200": (r) => r.status === 200 });
 
   let totalProducts = 0;
-  try { totalProducts = JSON.parse(countRes.body).total || 0; } catch (_) {}
+  try { totalProducts = JSON.parse(countRes.body).total || 0; } catch (_) { }
 
   // --- 4. Paginate to a random page ---
   const perPage = 6;
-  const maxPage = Math.max(1, Math.floor(totalProducts / perPage));
-  const randomPage = randomInt(1, Math.min(maxPage, 50)); // cap at 50 to avoid deep offsets
+  const maxPage = Math.max(1, Math.ceil(totalProducts / perPage));
+  const randomPage = randomInt(1, maxPage);
 
   const pageRes = http.get(`${API_PRODUCT}/product-list/${randomPage}`, jsonHeaders(token));
   const pageOk = check(pageRes, {
@@ -424,7 +431,7 @@ export function userActions() {
   try {
     const products = JSON.parse(filterRes.body).products || [];
     if (products.length > 0) productSlug = randomItem(products).slug;
-  } catch (_) {}
+  } catch (_) { }
 
   randomSleep(1, 2);
 

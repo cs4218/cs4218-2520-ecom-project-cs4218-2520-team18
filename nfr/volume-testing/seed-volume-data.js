@@ -1,3 +1,4 @@
+// Billy Ho Cheng En, A0252588R
 // Volume Testing — Seed Script
 // Inserts a large volume of categories, products, and orders directly into MongoDB
 // to establish a high-data-volume baseline before running the k6 volume test.
@@ -126,6 +127,41 @@ async function seedProducts(categoryIds) {
   return prods;
 }
 
+// --- Seed admin user ---
+
+async function seedAdminUser() {
+  const ADMIN_EMAIL = "admin.e2e@example.com";
+  const ADMIN_PASSWORD = "Password123";
+
+  const existing = await userModel.findOne({ email: ADMIN_EMAIL });
+
+  if (existing) {
+    console.log(`  Admin user already exists: ${ADMIN_EMAIL}`);
+    if (existing.role !== 1) {
+      existing.role = 1;
+      await existing.save();
+      console.log(`  Updated existing user to admin role.`);
+    }
+    return;
+  }
+
+  console.log(`  Creating admin user: ${ADMIN_EMAIL}`);
+  const hashed = await hashPassword(ADMIN_PASSWORD);
+
+  await userModel.create({
+    name: "E2E Admin User",
+    email: ADMIN_EMAIL,
+    password: hashed,
+    phone: "+14155550000",
+    address: "1 Admin Street",
+    answer: "blue",
+    DOB: "2000-01-01",
+    role: 1,
+  });
+
+  console.log(`  Admin user created successfully.\n`);
+}
+
 // --- Seed users ---
 
 async function seedUsers() {
@@ -229,30 +265,36 @@ async function main() {
 
   console.log("\nVolume Testing — Seed Script");
   console.log("================================");
-  console.log(`  Categories : ${TOTAL_CATEGORIES}`);
-  console.log(`  Products   : ${TOTAL_PRODUCTS}`);
-  console.log(`  Users      : ${TOTAL_USERS}`);
-  console.log(`  Orders     : ${TOTAL_ORDERS}`);
+  console.log(`  Admin       : admin.e2e@example.com`);
+  console.log(`  Categories  : ${TOTAL_CATEGORIES}`);
+  console.log(`  Products    : ${TOTAL_PRODUCTS}`);
+  console.log(`  Users       : ${TOTAL_USERS}`);
+  console.log(`  Orders      : ${TOTAL_ORDERS}`);
   console.log("");
 
   console.log("Connecting to MongoDB...");
   await mongoose.connect(process.env.MONGO_URL);
   console.log(`Connected to ${mongoose.connection.host}\n`);
 
-  console.log("[1/4] Categories");
+  console.log("[0/5] Admin User");
+  await seedAdminUser();
+
+  console.log("[1/5] Categories");
   const categoryIds = await seedCategories();
 
-  console.log("[2/4] Products");
+  console.log("[2/5] Products");
   const products = await seedProducts(categoryIds);
 
-  console.log("[3/4] Users");
+  console.log("[3/5] Users");
   const userIds = await seedUsers();
 
-  console.log("[4/4] Orders");
+  console.log("[4/5] Orders");
   await seedOrders(userIds, products);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`\nDone! Volume data seeded in ${elapsed}s.`);
+  console.log(`  Admin email        : admin.e2e@example.com`);
+  console.log(`  Admin password     : Password123`);
   console.log(`  User email pattern : ${VT_PREFIX}user_XXXX@volumetest.com`);
   console.log(`  User password      : ${SHARED_PASSWORD}`);
   console.log(`  Product slug prefix: ${VT_PREFIX}product-XXXXXX\n`);
