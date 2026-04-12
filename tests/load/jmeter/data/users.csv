@@ -1,0 +1,4 @@
+email,password,name,phone,address,dob
+load.user1@example.com,Password123,Load User 1,+14155550101,1 Load Street,1999-01-01
+load.user2@example.com,Password123,Load User 2,+14155550102,2 Load Street,1998-02-02
+load.user3@example.com,Password123,Load User 3,+14155550103,3 Load Street,1997-03-03
